@@ -1,0 +1,75 @@
+.navbar {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 1% 5% 1% 5%;
+    margin: 0%;
+    background-color:#0A0A0A;
+}
+
+.navbar h1 {
+    margin: 0;
+}
+
+.buttondiv {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    width:30%;
+}
+
+body {
+    margin:0;
+}
+
+#website {
+    color: #6CB472;
+    font-family: 'Century Gothic', Helvetica;
+}
+
+.button {
+  background-color: #090808;
+  border-radius: 10px;
+  border-width:2px;
+  border-color: white;
+  border-style: solid;
+  box-sizing: border-box;
+  color: #6CB472;
+  cursor: pointer;
+  display: inline-block;
+  font-family: "Farfetch Basis","Helvetica Neue",Arial,sans-serif;
+  font-size: 13px;
+  font-weight: 700;
+  line-height: 1.5;
+  margin: 0;
+  max-width: none;
+  /*min-height: 44px; */ 
+  min-width: 10px;
+  outline: none;
+  overflow: hidden;
+  /*padding: 9px 20px 8px; */
+  padding: 2% 2% 2% 2%;
+  position: relative;
+  text-align: center;
+  text-transform: none;
+  user-select: none;
+  -webkit-user-select: none;
+  touch-action: manipulation;
+  width: fit-content;
+}
+
+.button:hover,
+.button:focus {
+  background-color: white;
+  color:#090808;
+}
+
+#canvasdiv {
+    width: 100%;
+    height: 500px; 
+    background-color: red;
+}
+canvas {
+    display: block; 
+    background-color: navy; 
+}
