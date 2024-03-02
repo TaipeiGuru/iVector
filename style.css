@@ -30,8 +30,6 @@ body {
 .button {
   background-color: #090808;
   border-radius: 10px;
-  border-width:2px;
-  border-color: white;
   border-style: solid;
   box-sizing: border-box;
   color: #6CB472;
@@ -43,11 +41,9 @@ body {
   line-height: 1.5;
   margin: 0;
   max-width: none;
-  /*min-height: 44px; */ 
   min-width: 10px;
   outline: none;
   overflow: hidden;
-  /*padding: 9px 20px 8px; */
   padding: 2% 2% 2% 2%;
   position: relative;
   text-align: center;
@@ -58,10 +54,9 @@ body {
   width: fit-content;
 }
 
-.button:hover,
-.button:focus {
-  background-color: white;
-  color:#090808;
+.button.active {
+    background-color: white;
+    color: #090808;
 }
 
 #canvasdiv {
