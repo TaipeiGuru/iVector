@@ -35,36 +35,19 @@ document.addEventListener('DOMContentLoaded', (event) => {
 
     function create() {
         var scene = this;
-        
         var centerX = scene.cameras.main.worldView.x + scene.cameras.main.width / 2;
         var centerY = scene.cameras.main.worldView.y + scene.cameras.main.height / 2;
-
-        // Reference sizes for the circles
         var baseCircleRadius = scene.cameras.main.height * 0.015;
         var smallCircleRadius = scene.cameras.main.height * 0.009;
-
-        // Store the initial zoom level
         var initialZoom = scene.cameras.main.zoom;
-
         var graphics = scene.add.graphics();
-        updateGraphics(scene, graphics, centerX, centerY, baseCircleRadius, smallCircleRadius);
-
-        this.input.on('wheel', (pointer, gameObjects, deltaX, deltaY, deltaZ) => {
-            if (deltaY > 0) {
-                scene.cameras.main.zoom *= 0.9;
-            } else {
-                scene.cameras.main.zoom *= 1.1;
-            }
-            // Update graphics based on new zoom level
-            updateGraphics(scene, graphics, centerX, centerY, baseCircleRadius, smallCircleRadius);
-        });
 
         function updateGraphics(scene, graphics, centerX, centerY, baseRadius, smallRadius) {
             graphics.clear();
         
             // Calculate the adjustment factor for line thickness based on zoom level
             var zoomAdjustmentFactor = scene.cameras.main.zoom / initialZoom;
-            var lineThickness = 1 / zoomAdjustmentFactor; // Adjusting line thickness inversely to zoom
+            var lineThickness = 1.5 / zoomAdjustmentFactor; // Adjusting line thickness inversely to zoom
         
             // Adjust circle sizes based on zoom level to maintain their screen size
             var adjustedBaseRadius = baseRadius / zoomAdjustmentFactor;
@@ -82,8 +65,27 @@ document.addEventListener('DOMContentLoaded', (event) => {
             graphics.fillCircle(centerX, centerY, adjustedBaseRadius);
             graphics.fillStyle(0x94ee8d, 1);
             graphics.fillCircle(centerX, centerY, adjustedSmallRadius);
-        }        
+        }
 
+        updateGraphics(scene, graphics, centerX, centerY, baseCircleRadius, smallCircleRadius);
+
+        this.input.on('wheel', (pointer, gameObjects, deltaX, deltaY, deltaZ) => {
+            let oldZoom = scene.cameras.main.zoom;
+            if (deltaY > 0) {
+                scene.cameras.main.zoom *= 0.9;
+            } else {
+                scene.cameras.main.zoom *= 1.1;
+            }
+            let newZoom = scene.cameras.main.zoom;
+            let scaleFactor = oldZoom / newZoom;
+            scene.children.list.forEach(child => {
+                if (child.type === 'Sprite') {
+                    child.setScale(child.scaleX * scaleFactor);
+                }
+            });
+        
+            updateGraphics(scene, graphics, centerX, centerY, baseCircleRadius, smallCircleRadius);
+        });        
 
         document.getElementById('spawn').addEventListener('click', function () {
             spawnButtonClicked = !spawnButtonClicked;
@@ -91,17 +93,19 @@ document.addEventListener('DOMContentLoaded', (event) => {
 
         this.input.on('pointerdown', function (pointer) {
             if (spawnButtonClicked) {
-                var aircraft = scene.add.sprite(pointer.x, pointer.y, 'aircraft');
-                aircraft.setScale(0.02);
+                var camera = scene.cameras.main;
+                var worldPoint = camera.getWorldPoint(pointer.x, pointer.y);
+                var aircraft = scene.add.sprite(worldPoint.x, worldPoint.y, 'aircraft');
+                let currentZoom = scene.cameras.main.zoom;
+                aircraft.setScale((scene.cameras.main.height * 0.0002) / currentZoom);
             }
-        });
+        });        
     }
 
     function update() {
         // Game logic
     }
 
-    // Function to calculate game height based on window and navbar dimensions
     function calculateGameHeight() {
         var navbarHeight = document.querySelector('.navbar').offsetHeight;
         var windowHeight = window.innerHeight;
