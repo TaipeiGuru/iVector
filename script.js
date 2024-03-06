@@ -44,23 +44,17 @@ document.addEventListener('DOMContentLoaded', (event) => {
 
         function updateGraphics(scene, graphics, centerX, centerY, baseRadius, smallRadius) {
             graphics.clear();
-        
-            // Calculate the adjustment factor for line thickness based on zoom level
             var zoomAdjustmentFactor = scene.cameras.main.zoom / initialZoom;
             var lineThickness = 1.5 / zoomAdjustmentFactor; // Adjusting line thickness inversely to zoom
-        
-            // Adjust circle sizes based on zoom level to maintain their screen size
             var adjustedBaseRadius = baseRadius / zoomAdjustmentFactor;
             var adjustedSmallRadius = smallRadius / zoomAdjustmentFactor;
-        
-            // Draw lines with adjusted thickness
+
             graphics.lineStyle(lineThickness, 0x924a49, 1);
             graphics.lineBetween(centerX, centerY, centerX + 300, centerY);
             graphics.lineBetween(centerX, centerY, centerX + 300, centerY + 15);
             graphics.lineBetween(centerX, centerY, centerX + 300, centerY - 15);
             graphics.lineBetween(centerX + 300, centerY - 15, centerX + 300, centerY + 15);
         
-            // Draw circles with adjusted sizes
             graphics.fillStyle(0x2d86e2, 1);
             graphics.fillCircle(centerX, centerY, adjustedBaseRadius);
             graphics.fillStyle(0x94ee8d, 1);
@@ -99,7 +93,31 @@ document.addEventListener('DOMContentLoaded', (event) => {
                 let currentZoom = scene.cameras.main.zoom;
                 aircraft.setScale((scene.cameras.main.height * 0.0002) / currentZoom);
             }
-        });        
+        });
+        
+        this.isDragging = false;
+        this.dragStart = { x: 0, y: 0 };
+
+        // Listen for the pointer down event
+        this.input.on('pointerdown', (pointer) => {
+            this.isDragging = true;
+            let zoom = scene.cameras.main.zoom;
+            this.dragStart.x = (pointer.x / zoom) + this.cameras.main.scrollX;
+            this.dragStart.y = (pointer.y / zoom) + this.cameras.main.scrollY;
+        });
+
+        // Listen for the pointer move event
+        this.input.on('pointermove', (pointer) => {
+            if (!this.isDragging) return;
+            let zoom = scene.cameras.main.zoom;
+            this.cameras.main.scrollX = this.dragStart.x - (pointer.x / zoom);
+            this.cameras.main.scrollY = this.dragStart.y - (pointer.y / zoom);
+        });
+
+        // Listen for the pointer up event to stop dragging
+        this.input.on('pointerup', () => {
+            this.isDragging = false;
+        });
     }
 
     function update() {
