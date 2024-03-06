@@ -121,10 +121,20 @@ document.addEventListener('DOMContentLoaded', (event) => {
     function orientToField(aircraft, centerX, centerY) {
         var aircraftX = aircraft.x;
         var aircraftY = aircraft.y;
+        var angleToCenter = Math.atan2(centerY - aircraftY, centerX - aircraftX);
+        var angleDegrees = Phaser.Math.RadToDeg(angleToCenter);
+        aircraft.angle = angleDegrees + 90;
+        
+        /*var offsetAngle = (180/Math.PI) * Math.asin((centerX-aircraftX) / Math.sqrt(Math.pow(centerX-aircraftX, 2) + Math.pow(centerY-aircraftY, 2)));
         if (aircraftX < centerX && aircraftY < centerY) {
-            var offsetAngle = (180/Math.PI) * Math.asin((centerX-aircraftX) / Math.sqrt(Math.pow(centerX-aircraftX, 2) + Math.pow(centerY-aircraftY, 2)));
             aircraft.angle += (180 - offsetAngle);
-        }
+        } else if (aircraftX > centerX && aircraftY < centerY) {
+            aircraft.angle -= (180 + offsetAngle);
+        } else if (aircraftX < centerX && aircraftY > centerY) {
+            aircraft.angle += offsetAngle;
+        } else {
+            aircraft.angle += offsetAngle;
+        }*/
     }
 
     function update() {
