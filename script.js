@@ -92,13 +92,13 @@ document.addEventListener('DOMContentLoaded', (event) => {
                 var aircraft = scene.add.sprite(worldPoint.x, worldPoint.y, 'aircraft');
                 let currentZoom = scene.cameras.main.zoom;
                 aircraft.setScale((scene.cameras.main.height * 0.0002) / currentZoom);
+                orientToField(aircraft, centerX, centerY);
             }
         });
         
         this.isDragging = false;
         this.dragStart = { x: 0, y: 0 };
 
-        // Listen for the pointer down event
         this.input.on('pointerdown', (pointer) => {
             this.isDragging = true;
             let zoom = scene.cameras.main.zoom;
@@ -106,7 +106,6 @@ document.addEventListener('DOMContentLoaded', (event) => {
             this.dragStart.y = (pointer.y / zoom) + this.cameras.main.scrollY;
         });
 
-        // Listen for the pointer move event
         this.input.on('pointermove', (pointer) => {
             if (!this.isDragging) return;
             let zoom = scene.cameras.main.zoom;
@@ -114,10 +113,18 @@ document.addEventListener('DOMContentLoaded', (event) => {
             this.cameras.main.scrollY = this.dragStart.y - (pointer.y / zoom);
         });
 
-        // Listen for the pointer up event to stop dragging
         this.input.on('pointerup', () => {
             this.isDragging = false;
         });
+    }
+
+    function orientToField(aircraft, centerX, centerY) {
+        var aircraftX = aircraft.x;
+        var aircraftY = aircraft.y;
+        if (aircraftX < centerX && aircraftY < centerY) {
+            var offsetAngle = (180/Math.PI) * Math.asin((centerX-aircraftX) / Math.sqrt(Math.pow(centerX-aircraftX, 2) + Math.pow(centerY-aircraftY, 2)));
+            aircraft.angle += (180 - offsetAngle);
+        }
     }
 
     function update() {
