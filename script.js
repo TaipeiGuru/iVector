@@ -24,6 +24,9 @@ document.addEventListener('DOMContentLoaded', (event) => {
             preload: preload,
             create: create,
             update: update
+        },
+        physics: {
+            default: 'arcade',
         }
     };
 
@@ -41,6 +44,8 @@ document.addEventListener('DOMContentLoaded', (event) => {
         var smallCircleRadius = scene.cameras.main.height * 0.009;
         var initialZoom = scene.cameras.main.zoom;
         var graphics = scene.add.graphics();
+
+        scene.physics.world.setBounds(0, 0, window.innerWidth, calculateGameHeight());
 
         function updateGraphics(scene, graphics, centerX, centerY, baseRadius, smallRadius) {
             graphics.clear();
@@ -89,10 +94,11 @@ document.addEventListener('DOMContentLoaded', (event) => {
             if (spawnButtonClicked) {
                 var camera = scene.cameras.main;
                 var worldPoint = camera.getWorldPoint(pointer.x, pointer.y);
-                var aircraft = scene.add.sprite(worldPoint.x, worldPoint.y, 'aircraft');
+                var aircraft = scene.physics.add.sprite(worldPoint.x, worldPoint.y, 'aircraft');
                 let currentZoom = scene.cameras.main.zoom;
                 aircraft.setScale((scene.cameras.main.height * 0.0002) / currentZoom);
                 orientToField(aircraft, centerX, centerY);
+                adjustMovement(aircraft);
             }
         });
         
@@ -118,13 +124,25 @@ document.addEventListener('DOMContentLoaded', (event) => {
         });
     }
 
+    function adjustMovement(aircraft) {
+        const altitude = 4000;
+        const airspeed = 200;
+        let groundspeed = 0.003373155 * altitude + airspeed;
+        let spriteSpeed = (groundspeed / 3128) * 29.1;
+
+        let angleRadians = Phaser.Math.DegToRad(aircraft.angle);
+        let velocityX = spriteSpeed * Math.sin(angleRadians);
+        let velocityY = -spriteSpeed * Math.cos(angleRadians);
+        aircraft.setVelocity(velocityX, velocityY);
+    }
+
     function orientToField(aircraft, centerX, centerY) {
         var aircraftX = aircraft.x;
         var aircraftY = aircraft.y;
         var angleToCenter = Math.atan2(centerY - aircraftY, centerX - aircraftX);
         var angleDegrees = Phaser.Math.RadToDeg(angleToCenter);
         aircraft.angle = angleDegrees + 90;
-        
+
         /*var offsetAngle = (180/Math.PI) * Math.asin((centerX-aircraftX) / Math.sqrt(Math.pow(centerX-aircraftX, 2) + Math.pow(centerY-aircraftY, 2)));
         if (aircraftX < centerX && aircraftY < centerY) {
             aircraft.angle += (180 - offsetAngle);
