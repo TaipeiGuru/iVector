@@ -97,6 +97,11 @@ document.addEventListener('DOMContentLoaded', (event) => {
                 var aircraft = scene.physics.add.sprite(worldPoint.x, worldPoint.y, 'aircraft');
                 let currentZoom = scene.cameras.main.zoom;
                 aircraft.setScale((scene.cameras.main.height * 0.0002) / currentZoom);
+                aircraft.altitude = 100 * Math.floor(Math.random() * 80 + 40);
+                aircraft.airspeed = Math.floor(Math.random() * 100 + 200)
+                if (aircraft.altitude < 10000 && aircraft.airspeed > 250) {
+                    aircraft.airspeed = 250;
+                }
                 orientToField(aircraft, centerX, centerY);
                 adjustMovement(aircraft);
             }
@@ -125,11 +130,9 @@ document.addEventListener('DOMContentLoaded', (event) => {
     }
 
     function adjustMovement(aircraft) {
-        const altitude = 4000;
-        const airspeed = 200;
-        let groundspeed = 0.003373155 * altitude + airspeed;
+        let groundspeed = 0.003373155 * aircraft.altitude + aircraft.airspeed;
         let spriteSpeed = (groundspeed / 3128) * 29.1;
-
+        console.log(aircraft.altitude + " " + aircraft.airspeed + " " + groundspeed);
         let angleRadians = Phaser.Math.DegToRad(aircraft.angle);
         let velocityX = spriteSpeed * Math.sin(angleRadians);
         let velocityY = -spriteSpeed * Math.cos(angleRadians);
