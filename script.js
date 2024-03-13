@@ -14,7 +14,9 @@ function toggleStart() {
 var spawnButtonClicked = false;
 var selectedAircraft = null;
 var mouseDown = false;
-var circleGraphics;
+var planeCircle;
+var mouseCircle;
+var lineGraphics;
 
 document.addEventListener('DOMContentLoaded', (event) => {
     // game
@@ -48,7 +50,9 @@ document.addEventListener('DOMContentLoaded', (event) => {
         var initialZoom = scene.cameras.main.zoom;
         var graphics = scene.add.graphics();
         var aircrafts = [];
-        circleGraphics = scene.add.graphics();
+        planeCircle = scene.add.graphics();
+        mouseCircle = scene.add.graphics();
+        lineGraphics = scene.add.graphics();
 
         scene.physics.world.setBounds(0, 0, window.innerWidth, calculateGameHeight());
 
@@ -132,23 +136,43 @@ document.addEventListener('DOMContentLoaded', (event) => {
         });
 
         this.input.on('pointermove', (pointer) => {
-            if (!this.isDragging) return;
-            let zoom = scene.cameras.main.zoom;
-            this.cameras.main.scrollX = this.dragStart.x - (pointer.x / zoom);
-            this.cameras.main.scrollY = this.dragStart.y - (pointer.y / zoom);
+            if (mouseDown && selectedAircraft != null) {
+                lineGraphics.clear();
+                mouseCircle.clear();
+                var worldPoint = scene.input.activePointer.positionToCamera(scene.cameras.main);
+                var lineThickness = 3 / scene.cameras.main.zoom; 
+                lineGraphics.lineStyle(lineThickness, 0xDD8AE6, 1);
+                lineGraphics.lineBetween(selectedAircraft.x, selectedAircraft.y, worldPoint.x, worldPoint.y);
+                mouseCircle.lineStyle(lineThickness, 0xDD8AE6, 1);
+                mouseCircle.strokeCircle(worldPoint.x, worldPoint.y, selectedAircraft.displayWidth / 4);
+            } else if (this.isDragging) {
+                let zoom = scene.cameras.main.zoom;
+                this.cameras.main.scrollX = this.dragStart.x - (pointer.x / zoom);
+                this.cameras.main.scrollY = this.dragStart.y - (pointer.y / zoom);
+            }
         });
 
         this.input.on('pointerup', () => {
             this.isDragging = false;
             mouseDown = false;
-            circleGraphics.clear();
+            selectedAircraft = null;
+            planeCircle.clear();
+            mouseCircle.clear();
+            lineGraphics.clear();
         });
+    }
+
+    function update() {
+        if (selectedAircraft != null && planeCircle != null && lineGraphics != null && mouseDown) {
+            planeCircle.clear();
+            planeCircle.lineStyle(3/this.cameras.main.zoom, 0xDD8AE6, 1);
+            planeCircle.strokeCircle(selectedAircraft.x, selectedAircraft.y, selectedAircraft.displayWidth / 4);
+        }
     }
 
     function adjustMovement(aircraft) {
         let groundspeed = 0.003373155 * aircraft.altitude + aircraft.airspeed;
         let spriteSpeed = (groundspeed / 3128) * 29.1;
-        console.log(aircraft.altitude + " " + aircraft.airspeed + " " + groundspeed);
         let angleRadians = Phaser.Math.DegToRad(aircraft.angle);
         let velocityX = spriteSpeed * Math.sin(angleRadians);
         let velocityY = -spriteSpeed * Math.cos(angleRadians);
@@ -172,14 +196,6 @@ document.addEventListener('DOMContentLoaded', (event) => {
         } else {
             aircraft.angle += offsetAngle;
         }*/
-    }
-
-    function update() {
-        if (selectedAircraft != null && circleGraphics != null && mouseDown) {
-            circleGraphics.clear();
-            circleGraphics.lineStyle(2, 0xFF00FF, 1);
-            circleGraphics.strokeCircle(selectedAircraft.x, selectedAircraft.y, selectedAircraft.displayWidth / 4);
-            }
     }
 
     function calculateGameHeight() {
