@@ -12,6 +12,7 @@ function toggleStart() {
 }
 
 var spawnButtonClicked = false;
+var selectedAircraft = null;
 
 document.addEventListener('DOMContentLoaded', (event) => {
     // game
@@ -44,6 +45,7 @@ document.addEventListener('DOMContentLoaded', (event) => {
         var smallCircleRadius = scene.cameras.main.height * 0.009;
         var initialZoom = scene.cameras.main.zoom;
         var graphics = scene.add.graphics();
+        var aircrafts = [];
 
         scene.physics.world.setBounds(0, 0, window.innerWidth, calculateGameHeight());
 
@@ -90,31 +92,39 @@ document.addEventListener('DOMContentLoaded', (event) => {
             spawnButtonClicked = !spawnButtonClicked;
         });
 
+        scene.isDragging = false;
+        scene.dragStart = { x: 0, y: 0 };
+
         this.input.on('pointerdown', function (pointer) {
-            if (spawnButtonClicked) {
-                var camera = scene.cameras.main;
-                var worldPoint = camera.getWorldPoint(pointer.x, pointer.y);
+            var camera = scene.cameras.main;
+            var worldPoint = camera.getWorldPoint(pointer.x, pointer.y);
+            let hitSprite = false;
+            aircrafts.forEach(aircraft => {
+                if(aircraft.getBounds().contains(worldPoint.x, worldPoint.y)) {
+                    hitSprite = true;
+                    aircraft.destroy(); // Remove the clicked sprite
+                    return;
+                }
+            });
+            if (!hitSprite && spawnButtonClicked) {
                 var aircraft = scene.physics.add.sprite(worldPoint.x, worldPoint.y, 'aircraft');
                 let currentZoom = scene.cameras.main.zoom;
                 aircraft.setScale((scene.cameras.main.height * 0.0002) / currentZoom);
                 aircraft.altitude = 100 * Math.floor(Math.random() * 80 + 40);
                 aircraft.airspeed = Math.floor(Math.random() * 100 + 200)
+                aircraft.setInteractive();
+                aircrafts.push(aircraft);
                 if (aircraft.altitude < 10000 && aircraft.airspeed > 250) {
                     aircraft.airspeed = 250;
                 }
                 orientToField(aircraft, centerX, centerY);
                 adjustMovement(aircraft);
+            } else if (!spawnButtonClicked) {
+                scene.isDragging = true;
+                let zoom = scene.cameras.main.zoom;
+                scene.dragStart.x = (pointer.x / zoom) + scene.cameras.main.scrollX;
+                scene.dragStart.y = (pointer.y / zoom) + scene.cameras.main.scrollY;
             }
-        });
-        
-        this.isDragging = false;
-        this.dragStart = { x: 0, y: 0 };
-
-        this.input.on('pointerdown', (pointer) => {
-            this.isDragging = true;
-            let zoom = scene.cameras.main.zoom;
-            this.dragStart.x = (pointer.x / zoom) + this.cameras.main.scrollX;
-            this.dragStart.y = (pointer.y / zoom) + this.cameras.main.scrollY;
         });
 
         this.input.on('pointermove', (pointer) => {
@@ -159,7 +169,11 @@ document.addEventListener('DOMContentLoaded', (event) => {
     }
 
     function update() {
-        // Game logic
+        if (selectedAircraft != null && circleGraphics) {
+            // Update the position of the circleGraphics to follow the selected aircraft
+            circleGraphics.x = selectedAircraft.x;
+            circleGraphics.y = selectedAircraft.y;
+        }
     }
 
     function calculateGameHeight() {
