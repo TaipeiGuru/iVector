@@ -13,6 +13,8 @@ function toggleStart() {
 
 var spawnButtonClicked = false;
 var selectedAircraft = null;
+var mouseDown = false;
+var circleGraphics;
 
 document.addEventListener('DOMContentLoaded', (event) => {
     // game
@@ -46,6 +48,7 @@ document.addEventListener('DOMContentLoaded', (event) => {
         var initialZoom = scene.cameras.main.zoom;
         var graphics = scene.add.graphics();
         var aircrafts = [];
+        circleGraphics = scene.add.graphics();
 
         scene.physics.world.setBounds(0, 0, window.innerWidth, calculateGameHeight());
 
@@ -96,13 +99,14 @@ document.addEventListener('DOMContentLoaded', (event) => {
         scene.dragStart = { x: 0, y: 0 };
 
         this.input.on('pointerdown', function (pointer) {
+            mouseDown = true;
             var camera = scene.cameras.main;
             var worldPoint = camera.getWorldPoint(pointer.x, pointer.y);
             let hitSprite = false;
             aircrafts.forEach(aircraft => {
                 if(aircraft.getBounds().contains(worldPoint.x, worldPoint.y)) {
                     hitSprite = true;
-                    aircraft.destroy(); // Remove the clicked sprite
+                    selectedAircraft = aircraft;
                     return;
                 }
             });
@@ -119,7 +123,7 @@ document.addEventListener('DOMContentLoaded', (event) => {
                 }
                 orientToField(aircraft, centerX, centerY);
                 adjustMovement(aircraft);
-            } else if (!spawnButtonClicked) {
+            } else if (!spawnButtonClicked && !hitSprite) {
                 scene.isDragging = true;
                 let zoom = scene.cameras.main.zoom;
                 scene.dragStart.x = (pointer.x / zoom) + scene.cameras.main.scrollX;
@@ -136,6 +140,8 @@ document.addEventListener('DOMContentLoaded', (event) => {
 
         this.input.on('pointerup', () => {
             this.isDragging = false;
+            mouseDown = false;
+            circleGraphics.clear();
         });
     }
 
@@ -169,11 +175,11 @@ document.addEventListener('DOMContentLoaded', (event) => {
     }
 
     function update() {
-        if (selectedAircraft != null && circleGraphics) {
-            // Update the position of the circleGraphics to follow the selected aircraft
-            circleGraphics.x = selectedAircraft.x;
-            circleGraphics.y = selectedAircraft.y;
-        }
+        if (selectedAircraft != null && circleGraphics != null && mouseDown) {
+            circleGraphics.clear();
+            circleGraphics.lineStyle(2, 0xFF00FF, 1);
+            circleGraphics.strokeCircle(selectedAircraft.x, selectedAircraft.y, selectedAircraft.displayWidth / 4);
+            }
     }
 
     function calculateGameHeight() {
