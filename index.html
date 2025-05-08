@@ -6,18 +6,23 @@
     <title>îVector</title>
     <link rel="icon" type="image/x-icon" href="/assets/favicon.png">
     <link rel="stylesheet" href="style.css">
-    <script src="https://cdn.jsdelivr.net/npm/phaser@v3.80.1/dist/phaser.min.js"></script>
-
 </head>
 <body>
     <div class="navbar">
         <h1 id="website">îVector</h1>
         <div class="buttondiv">
             <button class="button" id="spawn" style="margin-right:1%;" onclick="toggleSpawn()">Spawn Pilot</button>
+            <select id="approachSelect" style="display:none; margin-left:10px;">
+                <option value="ILS">ILS</option>
+                <option value="VIS">VIS</option>
+                <option value="RV">RV</option>
+            </select>
             <button class="button" id="share" style="margin-right:1%; margin-left:1%" onclick="toggleShare()">Share Session</button>
             <button class="button" id="start" style="margin-left:1%" onclick="toggleStart()">Start Controlling</button>
         </div>
     </div>
+    <script src="https://cdn.jsdelivr.net/npm/phaser@3.80.1/dist/phaser.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/phaser3-rex-plugins@1.1.78/dist/rexuiplugin.min.js"></script>
     <script src="script.js"></script>
 </body>
 </html>
