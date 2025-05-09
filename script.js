@@ -29,6 +29,8 @@ var speedMenu;
 var approachSpeedMenu;
 var maintainSpeedMenu;
 var maintainSpeedActionMenu;
+var runwayMenu;
+var expectApproachMenu;
 var suppressConfirmMenu = false;
 
 document.addEventListener('DOMContentLoaded', (event) => {
@@ -54,6 +56,7 @@ document.addEventListener('DOMContentLoaded', (event) => {
         this.load.image('aircraft', 'assets/aircrafticon.png');
         this.load.image('off_freq', 'assets/off_freq.png');
         this.load.image('in_sight', 'assets/in_sight.png');
+        this.load.image('bust', 'assets/bust.png');
     }
 
     function create() {
@@ -139,13 +142,15 @@ document.addEventListener('DOMContentLoaded', (event) => {
                 fill: '#FFFFFF'
             }).setOrigin(0.5);
         
-            bg.on('pointerdown', () => {
+            bg.on('pointerdown', (event) => {
                 generalMenu.setVisible(false);
                 suppressConfirmMenu = true;
+                const cam = scene.cameras.main;
+                const worldCenter = cam.getWorldPoint(cam.width / 2, cam.height / 2);
                 if (label === "Contact Other Frequency") {
-                    const pointer = scene.input.activePointer.positionToCamera(scene.cameras.main);
-                    contactMenu.setPosition(pointer.x + 10, pointer.y + 10);
+                    contactMenu.setPosition(worldCenter.x, worldCenter.y);
                     contactMenu.setVisible(true);
+                    event.stopPropagation();
                 } else if (label === "Report Airport In Sight") {
                     if (selectedAircraft && selectedAircraft.approach == "VIS") {
                         selectedAircraft.lookForAirport = true;
@@ -155,11 +160,14 @@ document.addEventListener('DOMContentLoaded', (event) => {
                     selectedAircraft.isCleared = true;
                     selectedAircraft.setTexture('aircraft');
                 } else if (label === "Request Speed") {
-                    const pointer = scene.input.activePointer.positionToCamera(scene.cameras.main);
-                    speedMenu.setPosition(pointer.x + 10, pointer.y + 10);
+                    speedMenu.setPosition(worldCenter.x, worldCenter.y);
                     speedMenu.setVisible(true);
-                }   
-                // Optional: add logic for the other labels later
+                    event.stopPropagation();
+                } else if (label === "Expect Approach") {
+                    expectApproachMenu.setPosition(worldCenter.x, worldCenter.y);
+                    expectApproachMenu.setVisible(true);
+                    event.stopPropagation();
+                }
             });
         
             generalMenu.add([bg, text]);
@@ -186,6 +194,9 @@ document.addEventListener('DOMContentLoaded', (event) => {
         contactBtn.on('pointerdown', () => {
             contactMenu.setVisible(false);
             if (selectedAircraft) {
+                if (selectedAircraft.approach == "RV") { 
+                    selectedAircraft.isCleared = true;
+                }
                 selectedAircraft.setTexture('off_freq');
                 if (selectedAircraft.label) {
                     selectedAircraft.label.destroy();
@@ -217,15 +228,19 @@ document.addEventListener('DOMContentLoaded', (event) => {
             bg.on('pointerdown', () => {
                 suppressConfirmMenu = true;
                 speedMenu.setVisible(false);
+                const cam = scene.cameras.main;
+                const worldCenter = cam.getWorldPoint(cam.width / 2, cam.height / 2);
                 if (selectedAircraft) {
                     if (label === "Maintain Speed") {
                         const pointer = scene.input.activePointer.positionToCamera(scene.cameras.main);
-                        maintainSpeedMenu.setPosition(pointer.x + 10, pointer.y + 10);
+                        maintainSpeedMenu.setPosition(worldCenter.x, worldCenter.y);
                         maintainSpeedMenu.setVisible(true);
+                        event.stopPropagation();
                     } else if (label === "Approach Speed") {
                         const pointer = scene.input.activePointer.positionToCamera(scene.cameras.main);
-                        approachSpeedMenu.setPosition(pointer.x + 10, pointer.y + 10);
+                        approachSpeedMenu.setPosition(worldCenter.x, worldCenter.y);
                         approachSpeedMenu.setVisible(true);
+                        event.stopPropagation();
                     }
                 }
             });
@@ -269,18 +284,20 @@ document.addEventListener('DOMContentLoaded', (event) => {
         maintainSpeeds.forEach((speed, index) => {
             let yOffset = index * (maintainBtnHeight + 4);
             let bg = scene.add.rectangle(0, yOffset, maintainBtnWidth, maintainBtnHeight, 0x3A3A3A).setOrigin(0.5).setInteractive();
-            let text = scene.add.text(0, yOffset, `Set ${speed}kts`, {
+            let text = scene.add.text(0, yOffset, `${speed}kts`, {
                 font: '14px Arial',
                 fill: '#FFFFFF'
             }).setOrigin(0.5);
-
-            bg.on('pointerdown', () => {
+            const cam = scene.cameras.main;
+            const worldCenter = cam.getWorldPoint(cam.width / 2, cam.height / 2);
+            bg.on('pointerdown', (event) => {
                 suppressConfirmMenu = true;
                 maintainSpeedMenu.setVisible(false);
                 pendingSpeed = speed;
                 const pointer = scene.input.activePointer.positionToCamera(scene.cameras.main);
-                maintainSpeedActionMenu.setPosition(pointer.x + 10, pointer.y + 10);
+                maintainSpeedActionMenu.setPosition(worldCenter.x, worldCenter.y);
                 maintainSpeedActionMenu.setVisible(true);
+                event.stopPropagation();
             });
 
             maintainSpeedMenu.add([bg, text]);
@@ -325,6 +342,51 @@ document.addEventListener('DOMContentLoaded', (event) => {
             maintainSpeedActionMenu.add([bg, text]);
         });
 
+        expectApproachMenu = scene.add.container(0, 0).setDepth(3).setVisible(false);
+        const expectOptions = ["ILS", "VIS", "RV"];
+        const expectBtnHeight = 30;
+        const expectBtnWidth = 120;
+
+        expectOptions.forEach((label, index) => {
+            let yOffset = index * (expectBtnHeight + 5);
+            let bg = scene.add.rectangle(0, yOffset, expectBtnWidth, expectBtnHeight, 0x3A3A3A).setOrigin(0.5).setInteractive();
+            let text = scene.add.text(0, yOffset, label, {
+                font: '14px Arial',
+                fill: '#FFFFFF'
+            }).setOrigin(0.5);
+        
+            bg.on('pointerdown', (event) => {
+                expectApproachMenu.setVisible(false);
+                suppressConfirmMenu = true;
+                pendingApproachType = label;
+                const cam = scene.cameras.main;
+                const worldCenter = cam.getWorldPoint(cam.width / 2, cam.height / 2);
+                runwayMenu.setPosition(worldCenter.x, worldCenter.y);
+                runwayMenu.setVisible(true);
+                event.stopPropagation();
+            });
+        
+            expectApproachMenu.add([bg, text]);
+        });
+
+        let pendingApproachType = null;
+        runwayMenu = scene.add.container(0, 0).setDepth(4).setVisible(false);
+        let runwayBtn = scene.add.rectangle(0, 0, 80, 30, 0x3A3A3A).setOrigin(0.5).setInteractive();
+        let runwayText = scene.add.text(0, 0, "27", {
+            font: '14px Arial',
+            fill: '#FFFFFF'
+        }).setOrigin(0.5);
+
+        runwayBtn.on('pointerdown', () => {
+            runwayMenu.setVisible(false);
+            suppressConfirmMenu = true;
+            if (selectedAircraft && pendingApproachType) {
+                selectedAircraft.approach = pendingApproachType;
+                selectedAircraft.runway = 27;
+                pendingApproachType = null;
+            }
+        });
+        runwayMenu.add([runwayBtn, runwayText]);
 
         scene.physics.world.setBounds(0, 0, window.innerWidth, calculateGameHeight());
 
@@ -406,6 +468,8 @@ document.addEventListener('DOMContentLoaded', (event) => {
                 }
                 aircraft.isCleared = false;
                 aircraft.lookForAirport = false;
+                aircraft.isEstablished = false;
+                aircraft.runway = null;
                 orientToField(aircraft, centerX, centerY);
                 aircraft.currentHeading = aircraft.angle;
                 aircraft.targetHeading = aircraft.angle;
@@ -439,8 +503,13 @@ document.addEventListener('DOMContentLoaded', (event) => {
                 if (angleDeg < 0) angleDeg += 360;
                 var heading = Math.round(angleDeg / 10) * 10;
                 assignedHeading = heading;
-        
-                headingText.setText(`${heading}°`);
+
+                const deltaX = worldPoint.x - selectedAircraft.x;
+                const deltaY = worldPoint.y - selectedAircraft.y;
+                const pixelDistance = Math.sqrt(deltaX * deltaX + deltaY * deltaY);
+                const nmDistance = (pixelDistance / 300) * 11; // 300px = 11nm (adjust if needed)
+
+                headingText.setText(`${heading}°  ${Math.round(nmDistance)}nm`);
                 headingText.setPosition(worldPoint.x + 10, worldPoint.y - 30);
                 headingText.setVisible(true);
             } else if (this.isDragging) {
@@ -576,7 +645,7 @@ document.addEventListener('DOMContentLoaded', (event) => {
             }                                          
         });
 
-        assignBtnBg.on('pointerdown', () => {
+        assignBtnBg.on('pointerdown', (event) => {
             confirmMenu.setVisible(false);
             suppressConfirmMenu = true; 
             if (!selectedAircraft || assignedHeading === null) return;
@@ -616,13 +685,14 @@ document.addEventListener('DOMContentLoaded', (event) => {
                     });
                 }
             }
-        
-            const pointer = scene.input.activePointer.positionToCamera(scene.cameras.main);
-            altitudeMenu.setPosition(pointer.x + 10, pointer.y + 10);
+            const cam = scene.cameras.main;
+            const worldCenter = cam.getWorldPoint(cam.width / 2, cam.height / 2);
+            altitudeMenu.setPosition(worldCenter.x, worldCenter.y);
             altitudeMenu.setVisible(true);
+            event.stopPropagation();
         });        
 
-        clearApproachBtnBg.on('pointerdown', () => {
+        clearApproachBtnBg.on('pointerdown', (event) => {
             confirmMenu.setVisible(false);
             suppressConfirmMenu = true; 
             if (!selectedAircraft || assignedHeading === null) return;
@@ -658,13 +728,14 @@ document.addEventListener('DOMContentLoaded', (event) => {
                     });
                 }
             }
-        
-            const pointer = scene.input.activePointer.positionToCamera(scene.cameras.main);
-            altitudeMenu.setPosition(pointer.x + 10, pointer.y + 10);
+            const cam = scene.cameras.main;
+            const worldCenter = cam.getWorldPoint(cam.width / 2, cam.height / 2);
+            altitudeMenu.setPosition(worldCenter.x, worldCenter.y);
             altitudeMenu.setVisible(true);
+            event.stopPropagation();
         });        
         
-        missedBtnBg.on('pointerdown', () => {
+        missedBtnBg.on('pointerdown', (event) => {
             confirmMenu.setVisible(false);
             suppressConfirmMenu = true; 
             if (!selectedAircraft || assignedHeading === null) return;
@@ -704,18 +775,21 @@ document.addEventListener('DOMContentLoaded', (event) => {
                     });
                 }
             }
-        
-            const pointer = scene.input.activePointer.positionToCamera(scene.cameras.main);
-            altitudeMenu.setPosition(pointer.x + 10, pointer.y + 10);
+            const cam = scene.cameras.main;
+            const worldCenter = cam.getWorldPoint(cam.width / 2, cam.height / 2);
+            altitudeMenu.setPosition(worldCenter.x, worldCenter.y);
             altitudeMenu.setVisible(true);
+            event.stopPropagation();
         });
 
-        otherBtnBg.on('pointerdown', () => {
+        otherBtnBg.on('pointerdown', (event) => {
             confirmMenu.setVisible(false);
             suppressConfirmMenu = true;
-            const pointer = scene.input.activePointer.positionToCamera(scene.cameras.main);
-            generalMenu.setPosition(pointer.x + 10, pointer.y + 10);
+            const cam = scene.cameras.main;
+            const worldCenter = cam.getWorldPoint(cam.width / 2, cam.height / 2);
+            generalMenu.setPosition(worldCenter.x, worldCenter.y);
             generalMenu.setVisible(true);
+            event.stopPropagation();
         });
         
     }
@@ -732,8 +806,12 @@ document.addEventListener('DOMContentLoaded', (event) => {
 
         aircrafts.forEach(aircraft => {
             if (aircraft.label) {
-                let altitudeShort = Math.round(aircraft.altitude / 100);  // e.g., 12400 -> 124
-                aircraft.label.setText(`${altitudeShort} ${Math.round(aircraft.airspeed)}KT ${aircraft.approach}`);
+                let altitudeShort = Math.round(aircraft.altitude / 100);  
+                let labelText = `${altitudeShort} ${Math.round(aircraft.airspeed)}KT ${aircraft.approach}`;
+                if (aircraft.runway != null) {
+                    labelText += ` ${aircraft.runway}`;
+                }
+                aircraft.label.setText(labelText);
                 aircraft.label.setPosition(aircraft.x, aircraft.y - aircraft.displayHeight / 1.2);
                 
                 // Scale label based on camera zoom
@@ -776,17 +854,55 @@ document.addEventListener('DOMContentLoaded', (event) => {
                 adjustMovement(aircraft);
             }
             if (aircraft.approach == "ILS") {
-                let isEastOfAirport = aircraft.x > centerX;
-                let isNorthOfLocalizer = aircraft.y < centerY;
-                let requiredInterceptHeading = isNorthOfLocalizer ? 240 : 300;
-                let isOnInterceptHeading = Math.abs(aircraft.angle + 360 - requiredInterceptHeading) <= 5;
-                if (aircraft.isCleared && isEastOfAirport && isOnInterceptHeading && Math.abs(aircraft.y - centerY) <= 6.5) {
-                    aircraft.targetHeading = 270;
-                    adjustMovement(aircraft);
+                let headingRad = Phaser.Math.DegToRad(aircraft.angle - 90); // Adjust so 0° is up
+                let dx = Math.cos(headingRad);
+                let dy = Math.sin(headingRad);
+                let interceptDistance = null;
+
+                if (Math.abs(dy) > 1e-6) {
+                    let t = (centerY - aircraft.y) / dy;
+                    let interceptX = aircraft.x + t * dx;
+                    let interceptY = centerY;
+                    if (t > 0 && interceptX >= centerX) {
+                        let distPx = Math.sqrt((interceptX - centerX) ** 2 + (interceptY - centerY) ** 2);
+                        interceptDistance = (distPx / 300) * 11;
+                    }
+                }
+                if (interceptDistance) {
+                    /*let maxInterceptAlt = Math.tan(Phaser.Math.DegToRad(3)) * interceptDistance * 6076;
+                    // Estimate time to intercept (in seconds)
+                    let groundspeed = 0.003373155 * aircraft.altitude + aircraft.airspeed; // knots
+                    let groundspeed_ft_s = groundspeed * 1.68781; // convert knots to ft/s
+                    let distance_ft = interceptDistance * 6076; // nm to ft
+                    let timeToIntercept = distance_ft / groundspeed_ft_s;
+
+                    let vy = aircraft.body.velocity.y; // pixels/sec
+                    let vy_ft_s = vy * (11 * 6076 / 300); // ft/sec
+
+                    let projectedAltitude = aircraft.altitude + vy_ft_s * timeToIntercept;
+                    console.log("Projected Altitude: " + projectedAltitude + " Max Intercept Alt: " + maxInterceptAlt);
+                    
+                    let validIntercept = projectedAltitude <= maxInterceptAlt;*/
+                    let validIntercept = true; // For now, assume valid intercept
+                    let isEastOfAirport = aircraft.x > centerX;
+                    let isNorthOfLocalizer = aircraft.y < centerY;
+                    let requiredInterceptHeading = isNorthOfLocalizer ? 240 : 300;
+                    let isOnInterceptHeading = Math.abs(aircraft.angle + 360 - requiredInterceptHeading) <= 5;
+                    if (validIntercept && aircraft.isCleared && isEastOfAirport && isOnInterceptHeading && Math.abs(aircraft.y - centerY) <= 6.5) {
+                        aircraft.targetHeading = 270;
+                        aircraft.isEstablished = true;
+                        adjustMovement(aircraft);
+                    }
                 }
             } else if (aircraft.approach == "RV") {
                 let isEastOfAirport = aircraft.x > centerX;
-                if (!aircraft.isCleared && isEastOfAirport && Math.abs(aircraft.y - centerY) <= 1.5) {
+                if (aircraft.isCleared && isEastOfAirport && Math.abs(aircraft.y - centerY) <= 1.5) {
+                    aircraft.angle = 270;
+                    adjustMovement(aircraft);
+                }
+            } else if (aircraft.approach == "VIS") {
+                let isEastOfAirport = aircraft.x > centerX;
+                if (aircraft.isCleared && isEastOfAirport && Math.abs(aircraft.y - centerY) <= 1.5) {
                     aircraft.angle = 270;
                     adjustMovement(aircraft);
                 }
@@ -822,7 +938,41 @@ document.addEventListener('DOMContentLoaded', (event) => {
                 }
             
                 adjustMovement(aircraft); // Reapply movement when speed changes
-            }            
+            }
+            let bust = false;
+            for (let j = 0; j < aircrafts.length; j++) {
+                const a2 = aircrafts[j];
+                if (a2 === aircraft) continue; 
+                const dx = aircraft.x - a2.x;
+                const dy = aircraft.y - a2.y;
+                const pixelDistance = Math.sqrt(dx * dx + dy * dy);
+                const nmDistance = (pixelDistance / 300) * 11;
+                const verticalSep = Math.abs(aircraft.altitude - a2.altitude);
+                if (nmDistance < 3 && verticalSep < 1000) {
+                    // aircraft is not cleared
+                    if (!aircraft.isCleared || (aircraft.approach == "ILS" && !aircraft.isEstablished)) {
+                        bust = true;
+                    } else {
+                        // other aircraft is not cleared and other aircraft is ILS and not established
+                        if (a2.approach == "ILS" && !a2.isEstablished) {
+                            bust = true
+                        }
+                        // other aircraft is not cleared and is VIS and is not cleared
+                        if (a2.approach == "VIS" && !a2.isCleared) {
+                            bust = true
+                        }
+                        // other aircraft is RV and is not cleared
+                        if (a2.approach == "RV" && !a2.isCleared) {
+                            bust = true
+                        }
+                    }
+                }
+            }
+            if (bust) {
+                aircraft.setTexture('bust');
+            } else {
+                aircraft.setTexture('aircraft');
+            }
         });
         let zoom = game.scene.keys.default.cameras.main.zoom;
         if (confirmMenu.visible) {
