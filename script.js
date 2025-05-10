@@ -199,6 +199,7 @@ document.addEventListener('DOMContentLoaded', (event) => {
                     selectedAircraft.label.destroy();
                     selectedAircraft.label = null;
                 }
+                selectedAircraft.setInteractive(false);
                 selectedAircraft = null;
             }
         });
@@ -844,8 +845,22 @@ document.addEventListener('DOMContentLoaded', (event) => {
 
         aircrafts.forEach(aircraft => {
             if (aircraft.label) {
-                let altitudeShort = Math.round(aircraft.altitude / 100);  
-                let labelText = `${altitudeShort} ${Math.round(aircraft.airspeed)}KT ${aircraft.approach}`;
+                let altitudeShort = Math.round(aircraft.altitude / 100);
+                let labelText = "";
+                if (
+                    typeof aircraft.targetAltitude !== "undefined" &&
+                    Math.abs(aircraft.altitude - aircraft.targetAltitude) > 1
+                ) {
+                    let targetShort = Math.round(aircraft.targetAltitude / 100);
+                    labelText = `${altitudeShort} > ${targetShort}`;
+                } else {
+                    labelText = `${altitudeShort}`;
+                }
+
+                labelText += ` ${Math.round(aircraft.airspeed)}KT`;
+                if (aircraft.approach) {
+                    labelText += ` ${aircraft.approach}`;
+                }
                 if (aircraft.runway != null) {
                     labelText += ` ${aircraft.runway}`;
                 }
@@ -957,9 +972,34 @@ document.addEventListener('DOMContentLoaded', (event) => {
                 }
             }
             if (aircraft.isEstablished && aircraft.x <= centerX) {
-                aircraft.label.destroy();
+                if (aircraft.label) {
+                    aircraft.label.destroy();
+                }
                 aircraft.destroy();
                 aircrafts = aircrafts.filter(a => a !== aircraft);
+
+                let newAircraft = this.physics.add.sprite(centerX, centerY, 'aircraft');
+                newAircraft.setScale((this.cameras.main.height * 0.0002) / this.cameras.main.zoom);
+                newAircraft.angle = 270;
+                newAircraft.altitude = 500;
+                newAircraft.targetAltitude = 3000;
+                newAircraft.airspeed = 200;
+                newAircraft.setInteractive();
+                newAircraft.approach = null; 
+                newAircraft.isCleared = false;
+                newAircraft.lookForAirport = false;
+                newAircraft.isEstablished = false;
+                newAircraft.startedDescent = false;
+                newAircraft.runway = null;
+                newAircraft.currentHeading = newAircraft.angle;
+                newAircraft.targetHeading = newAircraft.angle;
+                newAircraft.label = this.add.text(newAircraft.x, newAircraft.y - 30, '', {
+                    fontFamily: 'Arial',
+                    fontSize: '14px',
+                    fill: '#ffffff'
+                }).setOrigin(0.5);
+                aircrafts.push(newAircraft);
+                adjustMovement(newAircraft);
                 return;
             }
             if (aircraft.targetSpeed !== undefined && aircraft.airspeed !== aircraft.targetSpeed) {
