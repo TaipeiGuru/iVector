@@ -82,47 +82,42 @@ document.addEventListener('DOMContentLoaded', (event) => {
 
         confirmMenu = scene.add.container(0, 0).setDepth(2).setVisible(false);
 
-        var menuBg = scene.add.rectangle(0, 0, 160, 120, 0x222222, 0.95).setStrokeStyle(1, 0xDD8AE6).setOrigin(0.5);
+        var menuHeight = (4 * btnHeight) + 20; // 4 button heights (from -1.5 to 2.5) plus padding
+        var menuBg = scene.add.rectangle(0, 0, 160, menuHeight, 0x222222, 0.95).setStrokeStyle(1, 0xDD8AE6).setOrigin(0.5);
 
         var btnWidth = 155;
         var btnHeight = 30;
 
-        var assignBtnBg = scene.add.rectangle(0, -btnHeight / 2, btnWidth, btnHeight, 0x3A3A3A).setOrigin(0.5).setInteractive();
-        var assignBtnText = scene.add.text(0, -btnHeight / 2, 'Assign Altitude', {
+        var sendBtnBg = scene.add.rectangle(0, -btnHeight * 1.5, btnWidth, btnHeight, 0x3A3A3A).setOrigin(0.5).setInteractive();
+        var sendBtnText = scene.add.text(0, -btnHeight * 1.5, 'Send', {
             font: '14px Arial',
             fill: '#FFFFFF'
         }).setOrigin(0.5);
-        var clearApproachBtnBg = scene.add.rectangle(0, 0, btnWidth, btnHeight, 0x3A3A3A).setOrigin(0.5).setInteractive();
-        var clearApproachBtnText = scene.add.text(0, 0, 'Clear For Approach', {
+        var assignBtnBg = scene.add.rectangle(0, -btnHeight * 0.5, btnWidth, btnHeight, 0x3A3A3A).setOrigin(0.5).setInteractive();
+        var assignBtnText = scene.add.text(0, -btnHeight * 0.5, 'Assign Altitude', {
             font: '14px Arial',
             fill: '#FFFFFF'
         }).setOrigin(0.5);
-        var missedBtnBg = scene.add.rectangle(0, 0, btnWidth, btnHeight, 0x3A3A3A).setOrigin(0.5).setInteractive();
-        var missedBtnText = scene.add.text(0, 0, 'Missed Approach', {
+        var clearApproachBtnBg = scene.add.rectangle(0, btnHeight * 0.5, btnWidth, btnHeight, 0x3A3A3A).setOrigin(0.5).setInteractive();
+        var clearApproachBtnText = scene.add.text(0, btnHeight * 0.5, 'Clear For Approach', {
+            font: '14px Arial',
+            fill: '#FFFFFF'
+        }).setOrigin(0.5);
+        var missedBtnBg = scene.add.rectangle(0, btnHeight * 1.5, btnWidth, btnHeight, 0x3A3A3A).setOrigin(0.5).setInteractive();
+        var missedBtnText = scene.add.text(0, btnHeight * 1.5, 'Missed Approach', {
             font: '14px Arial',
             fill: '#FFFFFF'
         }).setOrigin(0.5);
 
-        var otherBtnBg = scene.add.rectangle(0, btnHeight / 2, btnWidth, btnHeight, 0x3A3A3A).setOrigin(0.5).setInteractive();
-        var otherBtnText = scene.add.text(0, btnHeight / 2, 'Other Message', {
+        var otherBtnBg = scene.add.rectangle(0, btnHeight * 2.5, btnWidth, btnHeight, 0x3A3A3A).setOrigin(0.5).setInteractive();
+        var otherBtnText = scene.add.text(0, btnHeight * 2.5, 'Other Message', {
             font: '14px Arial',
             fill: '#FFFFFF'
         }).setOrigin(0.5);
-
-        assignBtnBg.setY(-btnHeight * 1.5);
-        assignBtnText.setY(-btnHeight * 1.5);
-
-        clearApproachBtnBg.setY(-btnHeight * 0.5);
-        clearApproachBtnText.setY(-btnHeight * 0.5);
-
-        missedBtnBg.setY(btnHeight * 0.5);
-        missedBtnText.setY(btnHeight * 0.5);
-
-        otherBtnBg.setY(btnHeight * 1.5);
-        otherBtnText.setY(btnHeight * 1.5);
 
         confirmMenu.add([
             menuBg,
+            sendBtnBg, sendBtnText,
             assignBtnBg, assignBtnText,
             clearApproachBtnBg, clearApproachBtnText,
             missedBtnBg, missedBtnText,
@@ -158,7 +153,9 @@ document.addEventListener('DOMContentLoaded', (event) => {
                     }
                 } else if (label === "Clear For Approach") {
                     selectedAircraft.isCleared = true;
+                    selectedAircraft.lookForAirport = false;
                     selectedAircraft.setTexture('aircraft');
+                    selectedAircraft = null;
                 } else if (label === "Request Speed") {
                     speedMenu.setPosition(worldCenter.x, worldCenter.y);
                     speedMenu.setVisible(true);
@@ -469,6 +466,7 @@ document.addEventListener('DOMContentLoaded', (event) => {
                 aircraft.isCleared = false;
                 aircraft.lookForAirport = false;
                 aircraft.isEstablished = false;
+                aircraft.startedDescent = false;
                 aircraft.runway = null;
                 orientToField(aircraft, centerX, centerY);
                 aircraft.currentHeading = aircraft.angle;
@@ -642,7 +640,31 @@ document.addEventListener('DOMContentLoaded', (event) => {
                     selectedAircraft = null;
                     pendingSpeed = null;
                 }
-            }                                          
+            }   
+            if (runwayMenu.visible) {
+                let bounds = runwayMenu.getBounds();
+                if (
+                    worldX < bounds.x ||
+                    worldX > bounds.x + bounds.width ||
+                    worldY < bounds.y ||
+                    worldY > bounds.y + bounds.height
+                ) {
+                    runwayMenu.setVisible(false);
+                    selectedAircraft = null;
+                }
+            }
+            if (expectApproachMenu.visible) {
+                let bounds = expectApproachMenu.getBounds();
+                if (
+                    worldX < bounds.x ||
+                    worldX > bounds.x + bounds.width ||
+                    worldY < bounds.y ||
+                    worldY > bounds.y + bounds.height
+                ) {
+                    expectApproachMenu.setVisible(false);
+                    selectedAircraft = null;
+                }
+            }
         });
 
         assignBtnBg.on('pointerdown', (event) => {
@@ -677,6 +699,8 @@ document.addEventListener('DOMContentLoaded', (event) => {
                     text.setText(`${alt} ft`);
                     bg.removeAllListeners();  // Clear old listeners
                     bg.on('pointerdown', () => {
+                        selectedAircraft.isCleared = false;
+                        selectedAircraft.isEstablished = false;
                         selectedAircraft.targetAltitude = alt;
                         selectedAircraft.targetHeading = assignedHeading;
                         adjustMovement(selectedAircraft);
@@ -692,6 +716,19 @@ document.addEventListener('DOMContentLoaded', (event) => {
             event.stopPropagation();
         });        
 
+        sendBtnBg.on('pointerdown', (event) => {
+            selectedAircraft.isCleared = false;
+            selectedAircraft.isEstablished = false;
+            confirmMenu.setVisible(false);
+            suppressConfirmMenu = true;
+            if (!selectedAircraft || assignedHeading === null) return;
+            
+            selectedAircraft.targetHeading = assignedHeading;
+            adjustMovement(selectedAircraft);
+            selectedAircraft = null;
+            event.stopPropagation();
+        });
+        
         clearApproachBtnBg.on('pointerdown', (event) => {
             confirmMenu.setVisible(false);
             suppressConfirmMenu = true; 
@@ -737,6 +774,8 @@ document.addEventListener('DOMContentLoaded', (event) => {
         
         missedBtnBg.on('pointerdown', (event) => {
             confirmMenu.setVisible(false);
+            selectedAircraft.isCleared = false;
+            selectedAircraft.isEstablished = false;
             suppressConfirmMenu = true; 
             if (!selectedAircraft || assignedHeading === null) return;
         
@@ -797,7 +836,6 @@ document.addEventListener('DOMContentLoaded', (event) => {
     function update(time, delta) {
         let centerX = AIRPORT_X;
         let centerY = AIRPORT_Y;
-        // Highlight selected aircraft
         if (selectedAircraft != null && planeCircle != null && lineGraphics != null && mouseDown) {
             planeCircle.clear();
             planeCircle.lineStyle(3 / this.cameras.main.zoom, 0xDD8AE6, 1);
@@ -859,31 +897,28 @@ document.addEventListener('DOMContentLoaded', (event) => {
                 let dy = Math.sin(headingRad);
                 let interceptDistance = null;
 
+                let interceptX = 0;
+                let interceptY = centerY;
                 if (Math.abs(dy) > 1e-6) {
                     let t = (centerY - aircraft.y) / dy;
-                    let interceptX = aircraft.x + t * dx;
-                    let interceptY = centerY;
+                    interceptX = aircraft.x + t * dx;
                     if (t > 0 && interceptX >= centerX) {
                         let distPx = Math.sqrt((interceptX - centerX) ** 2 + (interceptY - centerY) ** 2);
                         interceptDistance = (distPx / 300) * 11;
                     }
                 }
                 if (interceptDistance) {
-                    /*let maxInterceptAlt = Math.tan(Phaser.Math.DegToRad(3)) * interceptDistance * 6076;
-                    // Estimate time to intercept (in seconds)
-                    let groundspeed = 0.003373155 * aircraft.altitude + aircraft.airspeed; // knots
-                    let groundspeed_ft_s = groundspeed * 1.68781; // convert knots to ft/s
-                    let distance_ft = interceptDistance * 6076; // nm to ft
-                    let timeToIntercept = distance_ft / groundspeed_ft_s;
-
-                    let vy = aircraft.body.velocity.y; // pixels/sec
-                    let vy_ft_s = vy * (11 * 6076 / 300); // ft/sec
-
-                    let projectedAltitude = aircraft.altitude + vy_ft_s * timeToIntercept;
-                    console.log("Projected Altitude: " + projectedAltitude + " Max Intercept Alt: " + maxInterceptAlt);
-                    
-                    let validIntercept = projectedAltitude <= maxInterceptAlt;*/
-                    let validIntercept = true; // For now, assume valid intercept
+                    let distanceToInterceptPx = Math.sqrt((interceptX - aircraft.x) ** 2 + (interceptY - aircraft.y) ** 2);
+                    let speedX = aircraft.body.velocity.x;
+                    let speedY = aircraft.body.velocity.y;
+                    let totalSpeedInPixelsPerSecond = Math.sqrt(speedX * speedX + speedY * speedY);
+                    let timeToIntercept = distanceToInterceptPx / totalSpeedInPixelsPerSecond;
+                    let projectedAltitude = aircraft.targetAltitude;
+                    if (aircraft.targetAltitude < aircraft.altitude) {
+                        projectedAltitude = Math.max(aircraft.altitude - (timeToIntercept * 25), aircraft.targetAltitude);
+                    }
+                    let maxInterceptAlt = Math.tan(Phaser.Math.DegToRad(3)) * interceptDistance * 6076;
+                    let validIntercept = projectedAltitude <= maxInterceptAlt + 100; 
                     let isEastOfAirport = aircraft.x > centerX;
                     let isNorthOfLocalizer = aircraft.y < centerY;
                     let requiredInterceptHeading = isNorthOfLocalizer ? 240 : 300;
@@ -899,30 +934,33 @@ document.addEventListener('DOMContentLoaded', (event) => {
                 if (aircraft.isCleared && isEastOfAirport && Math.abs(aircraft.y - centerY) <= 1.5) {
                     aircraft.angle = 270;
                     adjustMovement(aircraft);
+                    aircraft.isEstablished = true;
                 }
             } else if (aircraft.approach == "VIS") {
-                let isEastOfAirport = aircraft.x > centerX;
-                if (aircraft.isCleared && isEastOfAirport && Math.abs(aircraft.y - centerY) <= 1.5) {
-                    aircraft.angle = 270;
-                    adjustMovement(aircraft);
-                }
-            }
-            if (aircraft.isCleared && aircraft.x <= centerX) {
-                aircraft.label.destroy();
-                aircraft.destroy();
-                aircrafts = aircrafts.filter(a => a !== aircraft);
-            }
-            if (aircraft.lookForAirport) {
                 let dx = AIRPORT_X - aircraft.x;
                 let dy = AIRPORT_Y - aircraft.y;
-
                 let angleToAirport = Phaser.Math.RadToDeg(Math.atan2(dx, -dy));
                 if (angleToAirport < 0) angleToAirport += 360;
                 let angleDiff = Phaser.Math.Angle.ShortestBetween((aircraft.angle + 360) % 360, angleToAirport);
-                if (Math.abs(angleDiff) <= 60) {
+                if (Math.abs(angleDiff) <= 85 && aircraft.lookForAirport) {
                     aircraft.setTexture('in_sight');
                     aircraft.lookForAirport = false; 
+                } else if (Math.abs(angleDiff) > 85 && aircraft.texture.key == 'in_sight') {
+                    aircraft.setTexture('aircraft');
+                    aircraft.lookForAirport = true;
                 }
+                let isEastOfAirport = aircraft.x > centerX;
+                if (aircraft.isCleared && isEastOfAirport && Math.abs(aircraft.y - centerY) <= 1.5) {
+                    aircraft.angle = 270;
+                    aircraft.isEstablished = true;
+                    adjustMovement(aircraft);
+                }
+            }
+            if (aircraft.isEstablished && aircraft.x <= centerX) {
+                aircraft.label.destroy();
+                aircraft.destroy();
+                aircrafts = aircrafts.filter(a => a !== aircraft);
+                return;
             }
             if (aircraft.targetSpeed !== undefined && aircraft.airspeed !== aircraft.targetSpeed) {
                 let deltaSpeed = 0.68 * (delta / 1000);
@@ -939,7 +977,34 @@ document.addEventListener('DOMContentLoaded', (event) => {
             
                 adjustMovement(aircraft); // Reapply movement when speed changes
             }
+            if (aircraft.isEstablished) {
+                let distanceToAirportPx = Math.sqrt((centerX - aircraft.x) ** 2 + (centerY - aircraft.y) ** 2);
+                let speedX = aircraft.body.velocity.x;
+                let speedY = aircraft.body.velocity.y;
+                let totalSpeedInPixelsPerSecond = Math.sqrt(speedX * speedX + speedY * speedY);
+                let timeToAirport = distanceToAirportPx / totalSpeedInPixelsPerSecond;            
+                if (aircraft.altitude <= aircraft.maxInterceptAlt) {
+                    // Hold altitude until intercept, then descend to 0 at airport
+                    if (!aircraft.startedDescent) {
+                        let distanceInterceptToAirportPx = Math.sqrt((centerX - interceptX) ** 2 + (centerY - interceptY) ** 2);
+                        let timeInterceptToAirport = distanceInterceptToAirportPx / totalSpeedInPixelsPerSecond;
+                        aircraft.descentRate = aircraft.altitude / timeInterceptToAirport; // ft/s
+                        aircraft.holdUntil = performance.now() + (timeToIntercept * 1000);
+                        aircraft.startedDescent = false;
+                    }
+                    if (performance.now() >= aircraft.holdUntil) {
+                        aircraft.altitude -= aircraft.descentRate * (delta / 1000);
+                        if (aircraft.altitude < 0) aircraft.altitude = 0;
+                        aircraft.startedDescent = true;
+                    }
+                } else {
+                    let descentRate = aircraft.altitude / timeToAirport; // ft/s
+                    aircraft.altitude -= descentRate * (delta / 1000);
+                    if (aircraft.altitude < 0) aircraft.altitude = 0;
+                }
+            }
             let bust = false;
+            let texture = aircraft.texture.key;
             for (let j = 0; j < aircrafts.length; j++) {
                 const a2 = aircrafts[j];
                 if (a2 === aircraft) continue; 
@@ -971,7 +1036,7 @@ document.addEventListener('DOMContentLoaded', (event) => {
             if (bust) {
                 aircraft.setTexture('bust');
             } else {
-                aircraft.setTexture('aircraft');
+                aircraft.setTexture(texture);
             }
         });
         let zoom = game.scene.keys.default.cameras.main.zoom;
@@ -995,7 +1060,13 @@ document.addEventListener('DOMContentLoaded', (event) => {
         }
         if (maintainSpeedActionMenu.visible) {
             maintainSpeedActionMenu.setScale(1 / zoom);
-        }                        
+        }
+        if (runwayMenu.visible) {
+            runwayMenu.setScale(1 / zoom);
+        }          
+        if (expectApproachMenu.visible) {
+            expectApproachMenu.setScale(1 / zoom);
+        }
     }
 
     function adjustMovement(aircraft) {
