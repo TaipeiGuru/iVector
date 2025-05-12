@@ -32,6 +32,9 @@ var maintainSpeedActionMenu;
 var runwayMenu;
 var expectApproachMenu;
 var suppressConfirmMenu = false;
+var pointerDownX = 0;
+var pointerDownY = 0;
+var distance = 0;
 
 document.addEventListener('DOMContentLoaded', (event) => {
     // game
@@ -199,7 +202,7 @@ document.addEventListener('DOMContentLoaded', (event) => {
                     selectedAircraft.label.destroy();
                     selectedAircraft.label = null;
                 }
-                selectedAircraft.setInteractive(false);
+                selectedAircraft.disableInteractive();
                 selectedAircraft = null;
             }
         });
@@ -431,16 +434,22 @@ document.addEventListener('DOMContentLoaded', (event) => {
             spawnButtonClicked = !spawnButtonClicked;
         });
 
+        document.getElementById('start').addEventListener('click', function () {
+            window.location.href = 'single.html';
+        });
+
         scene.isDragging = false;
         scene.dragStart = { x: 0, y: 0 };
 
         this.input.on('pointerdown', function (pointer) {
             mouseDown = true;
+            pointerDownX = pointer.x;
+            pointerDownY = pointer.y;
             var camera = scene.cameras.main;
             var worldPoint = camera.getWorldPoint(pointer.x, pointer.y);
             let hitSprite = false;
             aircrafts.forEach(aircraft => {
-                if(aircraft.getBounds().contains(worldPoint.x, worldPoint.y)) {
+                if(aircraft.input.enabled && aircraft.getBounds().contains(worldPoint.x, worldPoint.y)) {
                     hitSprite = true;
                     selectedAircraft = aircraft;
                     return;
@@ -521,8 +530,11 @@ document.addEventListener('DOMContentLoaded', (event) => {
             }
         });
     
-        this.input.on('pointerup', () => {
-
+        this.input.on('pointerup', (pointer) => {
+            let dx = pointer.x - pointerDownX;
+            let dy = pointer.y - pointerDownY;
+            distance = Math.sqrt(dx * dx + dy * dy);
+            
             this.isDragging = false;
             mouseDown = false;
         
@@ -532,13 +544,11 @@ document.addEventListener('DOMContentLoaded', (event) => {
                 confirmMenu.setVisible(true);
             }
         
-            // selectedAircraft = null;
+            suppressConfirmMenu = false;
             planeCircle.clear();
             mouseCircle.clear();
             lineGraphics.clear();
             headingText.setVisible(false);
-            suppressConfirmMenu = false;
-
         });        
 
         this.input.on('pointerdown', function (pointer) {
@@ -546,15 +556,11 @@ document.addEventListener('DOMContentLoaded', (event) => {
             const worldX = camera.getWorldPoint(pointer.x, pointer.y).x;
             const worldY = camera.getWorldPoint(pointer.x, pointer.y).y;
             if (confirmMenu.visible) {
-                let bounds = menuBg.getBounds();
-                if (
-                    worldX < bounds.x ||
-                    worldX > bounds.x + bounds.width ||
-                    worldY < bounds.y ||
-                    worldY > bounds.y + bounds.height
-                ) {
+                let pointer = scene.input.activePointer;
+                if (!menuBg.getBounds().contains(pointer.worldX, pointer.worldY)) {
                     confirmMenu.setVisible(false);
                     selectedAircraft = null;
+                    suppressConfirmMenu = true;
                 }
             }
             if (altitudeMenu.visible) {
@@ -703,7 +709,9 @@ document.addEventListener('DOMContentLoaded', (event) => {
                         selectedAircraft.isCleared = false;
                         selectedAircraft.isEstablished = false;
                         selectedAircraft.targetAltitude = alt;
-                        selectedAircraft.targetHeading = assignedHeading;
+                        if (distance > 5) {
+                            selectedAircraft.targetHeading = assignedHeading;
+                        }
                         adjustMovement(selectedAircraft);
                         selectedAircraft = null;
                         altitudeMenu.setVisible(false);
