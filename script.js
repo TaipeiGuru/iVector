@@ -434,10 +434,6 @@ document.addEventListener('DOMContentLoaded', (event) => {
             spawnButtonClicked = !spawnButtonClicked;
         });
 
-        document.getElementById('start').addEventListener('click', function () {
-            window.location.href = 'single.html';
-        });
-
         scene.isDragging = false;
         scene.dragStart = { x: 0, y: 0 };
 
