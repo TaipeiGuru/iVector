@@ -34,7 +34,7 @@ var expectApproachMenu;
 var suppressConfirmMenu = false;
 var pointerDownX = 0;
 var pointerDownY = 0;
-var distance = 0;
+var dragged = false;
 
 document.addEventListener('DOMContentLoaded', (event) => {
     // game
@@ -439,6 +439,7 @@ document.addEventListener('DOMContentLoaded', (event) => {
         scene.dragStart = { x: 0, y: 0 };
 
         this.input.on('pointerdown', function (pointer) {
+            dragged = false;
             mouseDown = true;
             pointerDownX = pointer.x;
             pointerDownY = pointer.y;
@@ -491,6 +492,9 @@ document.addEventListener('DOMContentLoaded', (event) => {
 
         this.input.on('pointermove', (pointer) => {
             if (mouseDown && selectedAircraft != null) {
+                if (!dragged) {
+                    dragged = true;
+                }
                 lineGraphics.clear();
                 mouseCircle.clear();
         
@@ -676,7 +680,7 @@ document.addEventListener('DOMContentLoaded', (event) => {
         assignBtnBg.on('pointerdown', (event) => {
             confirmMenu.setVisible(false);
             suppressConfirmMenu = true; 
-            if (!selectedAircraft || assignedHeading === null) return;
+            if (!selectedAircraft) return;
         
             // Calculate valid altitudes
             let current = Math.floor(selectedAircraft.altitude / 1000) * 1000;
@@ -708,7 +712,7 @@ document.addEventListener('DOMContentLoaded', (event) => {
                         selectedAircraft.isCleared = false;
                         selectedAircraft.isEstablished = false;
                         selectedAircraft.targetAltitude = alt;
-                        if (distance > 5) {
+                        if (dragged) {
                             selectedAircraft.targetHeading = assignedHeading;
                         }
                         adjustMovement(selectedAircraft);
