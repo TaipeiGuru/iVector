@@ -855,6 +855,10 @@ document.addEventListener('DOMContentLoaded', (event) => {
         }
 
         aircrafts.forEach(aircraft => {
+            if (aircraft.altitude < 10500 && aircraft.airspeed > 250) {
+                aircraft.targetSpeed = 250;
+                adjustMovement(aircraft);
+            }
             if (aircraft.label) {
                 let altitudeShort = Math.round(aircraft.altitude / 100);
                 let labelText = "";
