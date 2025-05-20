@@ -194,6 +194,7 @@ document.addEventListener('DOMContentLoaded', (event) => {
         contactBtn.on('pointerdown', () => {
             contactMenu.setVisible(false);
             if (selectedAircraft) {
+                selectedAircraft.handedOff = true;
                 if (selectedAircraft.approach == "RV") { 
                     selectedAircraft.isCleared = true;
                 }
@@ -473,6 +474,8 @@ document.addEventListener('DOMContentLoaded', (event) => {
                 aircraft.lookForAirport = false;
                 aircraft.isEstablished = false;
                 aircraft.startedDescent = false;
+                aircraft.hasInSight = false;
+                aircraft.handedOff = false;
                 aircraft.runway = null;
                 orientToField(aircraft, centerX, centerY);
                 aircraft.currentHeading = aircraft.angle;
@@ -964,9 +967,11 @@ document.addEventListener('DOMContentLoaded', (event) => {
                 if (Math.abs(angleDiff) <= 85 && aircraft.lookForAirport) {
                     aircraft.setTexture('in_sight');
                     aircraft.lookForAirport = false; 
+                    aircraft.hasInSight = true;
                 } else if (Math.abs(angleDiff) > 85 && aircraft.texture.key == 'in_sight') {
                     aircraft.setTexture('aircraft');
                     aircraft.lookForAirport = true;
+                    aircraft.hasInSight = false;
                 }
                 let isEastOfAirport = aircraft.x > centerX;
                 if (aircraft.isCleared && isEastOfAirport && Math.abs(aircraft.y - centerY) <= 1.5) {
@@ -994,6 +999,7 @@ document.addEventListener('DOMContentLoaded', (event) => {
                 newAircraft.lookForAirport = false;
                 newAircraft.isEstablished = false;
                 newAircraft.startedDescent = false;
+                newAircraft.handedOff = false;
                 newAircraft.runway = null;
                 newAircraft.currentHeading = newAircraft.angle;
                 newAircraft.targetHeading = newAircraft.angle;
@@ -1048,7 +1054,6 @@ document.addEventListener('DOMContentLoaded', (event) => {
                 }
             }
             let bust = false;
-            let texture = aircraft.texture.key;
             for (let j = 0; j < aircrafts.length; j++) {
                 const a2 = aircrafts[j];
                 if (a2 === aircraft) continue; 
@@ -1080,7 +1085,13 @@ document.addEventListener('DOMContentLoaded', (event) => {
             if (bust) {
                 aircraft.setTexture('bust');
             } else {
-                aircraft.setTexture(texture);
+                if (aircraft.handedOff) {
+                    aircraft.setTexture('off_freq');
+                } else if (aircraft.hasInSight) {
+                    aircraft.setTexture('in_sight');
+                } else {
+                    aircraft.setTexture('aircraft');
+                }
             }
         });
         let zoom = game.scene.keys.default.cameras.main.zoom;
