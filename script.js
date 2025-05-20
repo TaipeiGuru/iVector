@@ -858,10 +858,7 @@ document.addEventListener('DOMContentLoaded', (event) => {
             if (aircraft.label) {
                 let altitudeShort = Math.round(aircraft.altitude / 100);
                 let labelText = "";
-                if (
-                    typeof aircraft.targetAltitude !== "undefined" &&
-                    Math.abs(aircraft.altitude - aircraft.targetAltitude) > 1
-                ) {
+                if (typeof aircraft.targetAltitude !== "undefined") {
                     let targetShort = Math.round(aircraft.targetAltitude / 100);
                     labelText = `${altitudeShort} > ${targetShort}`;
                 } else {
@@ -890,13 +887,11 @@ document.addEventListener('DOMContentLoaded', (event) => {
                     aircraft.altitude -= deltaFt;
                     if (aircraft.altitude <= aircraft.targetAltitude) {
                         aircraft.altitude = aircraft.targetAltitude;
-                        delete aircraft.targetAltitude;
                     }
                 } else {
                     aircraft.altitude += deltaFt;
                     if (aircraft.altitude >= aircraft.targetAltitude) {
                         aircraft.altitude = aircraft.targetAltitude;
-                        delete aircraft.targetAltitude;
                     }
                 }
             }            
