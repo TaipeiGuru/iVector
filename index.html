@@ -10,7 +10,6 @@
 <body>
     <div class="navbar">
         <h1 id="website">îVector</h1>
-        <!-- No buttons here for the home screen -->
     </div>
     <div class="home-container">
         <div class="placeholder-img">
@@ -20,10 +19,15 @@
             <button id="singleBtn" class="toggle-btn active">Single Runway</button>
             <button id="parallelsBtn" class="toggle-btn">Parallels</button>
         </div>
+        <div class="join-group" style="margin-top: 1em;">
+            <button id="joinSessionBtn" class="toggle-btn">Join Existing Session</button>
+        </div>
         <button class="start-btn" id="startControlBtn">Start Controlling</button>
     </div>
+
     <script>
-        // Toggle logic
+        const socket = new WebSocket('ws://localhost:3000');
+
         const singleBtn = document.getElementById('singleBtn');
         const parallelsBtn = document.getElementById('parallelsBtn');
         let selectedMode = 'single';
@@ -40,10 +44,17 @@
             selectedMode = 'parallels';
         });
 
-        // Start button logic
+        document.getElementById('joinSessionBtn').addEventListener('click', () => {
+            const code = prompt("Enter session code:");
+            if (code) {
+                const sessionCode = code.trim().toUpperCase();
+                window.location.href = `single.html?session=${sessionCode}`;
+            }
+        });
+
         document.getElementById('startControlBtn').addEventListener('click', function () {
-            // Change 'main.html' to your actual main app file if needed
-            window.location.href = selectedMode === 'single' ? 'single.html' : 'parallels.html';
+            const modePage = selectedMode === 'single' ? 'single.html' : 'parallels.html';
+            window.location.href = modePage;
         });
     </script>
 </body>

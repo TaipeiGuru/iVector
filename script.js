@@ -1,3 +1,55 @@
+// === snippet inside script.js where socket is set up ===
+window.socket = new WebSocket('ws://localhost:3000');
+
+function displaySessionCode(code) {
+    const shareBtn = document.getElementById('share');
+    if (shareBtn) shareBtn.textContent = code; // Update the button label
+}
+
+window.socket.addEventListener('message', (event) => {
+    const msg = JSON.parse(event.data);
+
+    if (msg.type === 'session_created') {
+        displaySessionCode(msg.sessionCode);
+    } else if (msg.type === 'session_joined') {
+        displaySessionCode(msg.sessionCode);
+    } else if (msg.type === 'game_state') {
+        applyRemoteAircraftState?.(msg.state); // Optional sync logic
+    } else if (msg.type === 'error') {
+        alert(msg.message);
+    } else if (msg.type === 'peer_joined') {
+        broadcastAircraftState(); // Send state to new client
+    }
+});
+
+// === share button logic ===
+document.getElementById('share').addEventListener('click', () => {
+    const shareBtn = document.getElementById('share');
+    shareBtn.disabled = true;
+    shareBtn.classList.add('disabled'); // optional styling
+    window.socket.send(JSON.stringify({ type: 'create_session' }));
+});
+
+
+// === join session handling inside single.html ===
+const urlParams = new URLSearchParams(window.location.search);
+const sessionCode = urlParams.get('session');
+
+if (sessionCode) {
+    const shareBtn = document.getElementById('share');
+    if (shareBtn) {
+        shareBtn.disabled = true;
+    }
+}
+
+const waitForSocket = setInterval(() => {
+    if (window.socket && window.socket.readyState === WebSocket.OPEN && sessionCode) {
+        window.socket.send(JSON.stringify({ type: 'join_session', sessionCode: sessionCode.toUpperCase() }));
+        clearInterval(waitForSocket);
+    }
+}, 200);
+
+
 function toggleSpawn() {
     var button = document.getElementById('spawn');
     var dropdown = document.getElementById('approachSelect');
@@ -35,6 +87,7 @@ var suppressConfirmMenu = false;
 var pointerDownX = 0;
 var pointerDownY = 0;
 var dragged = false;
+var timeSinceLastBroadcast = 0;
 
 document.addEventListener('DOMContentLoaded', (event) => {
     // game
@@ -202,6 +255,7 @@ document.addEventListener('DOMContentLoaded', (event) => {
                 if (selectedAircraft.label) {
                     selectedAircraft.label.destroy();
                     selectedAircraft.label = null;
+                    selectedAircraft.labelVisible = false;
                 }
                 selectedAircraft.disableInteractive();
                 selectedAircraft = null;
@@ -447,7 +501,7 @@ document.addEventListener('DOMContentLoaded', (event) => {
             var worldPoint = camera.getWorldPoint(pointer.x, pointer.y);
             let hitSprite = false;
             aircrafts.forEach(aircraft => {
-                if(aircraft.input.enabled && aircraft.getBounds().contains(worldPoint.x, worldPoint.y)) {
+                if(aircraft.input && aircraft.input.enabled && aircraft.getBounds().contains(worldPoint.x, worldPoint.y)) {
                     hitSprite = true;
                     selectedAircraft = aircraft;
                     return;
@@ -463,6 +517,7 @@ document.addEventListener('DOMContentLoaded', (event) => {
                 aircraft.approach = selectedApproach || 'ILS'; // fallback to ILS
                 aircraft.setInteractive();
                 aircrafts.push(aircraft);
+                broadcastAircraftState();
                 aircraft.label = scene.add.text(aircraft.x, aircraft.y - 30, '', {
                     fontFamily: 'Arial',
                     fontSize: '14px',
@@ -478,6 +533,7 @@ document.addEventListener('DOMContentLoaded', (event) => {
                 aircraft.hasInSight = false;
                 aircraft.handedOff = false;
                 aircraft.runway = null;
+                aircraft.labelVisible = true;
                 orientToField(aircraft, centerX, centerY);
                 aircraft.currentHeading = aircraft.angle;
                 aircraft.targetHeading = aircraft.angle;
@@ -846,6 +902,11 @@ document.addEventListener('DOMContentLoaded', (event) => {
     }
 
     function update(time, delta) {
+        timeSinceLastBroadcast += delta;
+        if (timeSinceLastBroadcast > 1000) {
+            broadcastAircraftState();
+            timeSinceLastBroadcast = 0;
+        }
         let centerX = AIRPORT_X;
         let centerY = AIRPORT_Y;
         if (selectedAircraft != null && planeCircle != null && lineGraphics != null && mouseDown) {
@@ -878,6 +939,7 @@ document.addEventListener('DOMContentLoaded', (event) => {
                 }
                 aircraft.label.setText(labelText);
                 aircraft.label.setPosition(aircraft.x, aircraft.y - aircraft.displayHeight / 1.2);
+                aircraft.labelVisible = true;
                 
                 // Scale label based on camera zoom
                 let zoom = game.scene.keys.default.cameras.main.zoom;
@@ -1149,4 +1211,68 @@ document.addEventListener('DOMContentLoaded', (event) => {
         var windowHeight = window.innerHeight;
         return windowHeight - navbarHeight;
     }
+
+    function broadcastAircraftState() {
+        if (!window.socket || window.socket.readyState !== WebSocket.OPEN) return;
+        const state = aircrafts.map(a => ({
+            id: a.id || (a.id = Math.random().toString(36).substr(2, 9)),
+            x: a.x,
+            y: a.y,
+            angle: a.angle,
+            altitude: a.altitude,
+            airspeed: a.airspeed,
+            approach: a.approach,
+            targetAltitude: a.targetAltitude,
+            texture: a.texture?.key || 'aircraft',
+            handedOff: a.handedOff,
+            labelVisible: a.labelVisible
+        }));
+        window.socket.send(JSON.stringify({ type: 'game_state', state }));
+    }
+
+    window.applyRemoteAircraftState = function applyRemoteAircraftState(remoteState) {
+        for (const s of remoteState) {
+            let aircraft = aircrafts.find(a => a.id === s.id);
+            if (!aircraft) {
+                aircraft = game.scene.keys.default.physics.add.sprite(s.x, s.y, 'aircraft');
+                aircraft.setScale((game.scene.keys.default.cameras.main.height * 0.0002) / game.scene.keys.default.cameras.main.zoom);
+                aircraft.id = s.id;
+                aircraft.label = game.scene.keys.default.add.text(s.x, s.y - 30, '', {
+                    fontFamily: 'Arial',
+                    fontSize: '14px',
+                    fill: '#ffffff'
+                }).setOrigin(0.5);
+                aircrafts.push(aircraft);
+            } else {
+                if (s.texture && aircraft.texture?.key !== s.texture) {
+                    aircraft.setTexture(s.texture);
+                }
+            }
+            aircraft.x = s.x;
+            aircraft.y = s.y;
+            aircraft.angle = s.angle;
+            aircraft.altitude = s.altitude;
+            aircraft.airspeed = s.airspeed;
+            aircraft.approach = s.approach;
+            aircraft.targetAltitude = s.targetAltitude;
+            aircraft.handedOff = s.handedOff;
+            if (s.labelVisible) {
+                if (!aircraft.label) {
+                    aircraft.label = game.scene.keys.default.add.text(aircraft.x, aircraft.y - 30, s.labelText, {
+                        fontFamily: 'Arial',
+                        fontSize: '14px',
+                        fill: '#ffffff'
+                    }).setOrigin(0.5);
+                } else {
+                    aircraft.label.setText(s.labelText);
+                }
+            } else {
+                if (aircraft.label) {
+                    aircraft.label.destroy();
+                    aircraft.label = null;
+                }
+            }
+        }
+    }    
+    
 });
