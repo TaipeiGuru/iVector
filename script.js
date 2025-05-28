@@ -117,7 +117,7 @@ document.addEventListener('DOMContentLoaded', (event) => {
     var config = {
         type: Phaser.AUTO,
         width: window.innerWidth,
-        height: calculateGameHeight(),
+        height: Utils.calculateGameHeight(),
         backgroundColor: '#1b1b1b',
         scene: {
             preload: preload,
@@ -467,28 +467,9 @@ document.addEventListener('DOMContentLoaded', (event) => {
         });
         runwayMenu.add([runwayBtn, runwayText]);
 
-        scene.physics.world.setBounds(0, 0, window.innerWidth, calculateGameHeight());
+        scene.physics.world.setBounds(0, 0, window.innerWidth, Utils.calculateGameHeight());
 
-        function updateGraphics(scene, graphics, centerX, centerY, baseRadius, smallRadius) {
-            graphics.clear();
-            var zoomAdjustmentFactor = scene.cameras.main.zoom / initialZoom;
-            var lineThickness = 1.5 / zoomAdjustmentFactor; // Adjusting line thickness inversely to zoom
-            var adjustedBaseRadius = baseRadius / zoomAdjustmentFactor;
-            var adjustedSmallRadius = smallRadius / zoomAdjustmentFactor;
-
-            graphics.lineStyle(lineThickness, 0x924a49, 1);
-            graphics.lineBetween(centerX, centerY, centerX + 300, centerY);
-            graphics.lineBetween(centerX, centerY, centerX + 300, centerY + 15);
-            graphics.lineBetween(centerX, centerY, centerX + 300, centerY - 15);
-            graphics.lineBetween(centerX + 300, centerY - 15, centerX + 300, centerY + 15);
-        
-            graphics.fillStyle(0x2d86e2, 1);
-            graphics.fillCircle(centerX, centerY, adjustedBaseRadius);
-            graphics.fillStyle(0x94ee8d, 1);
-            graphics.fillCircle(centerX, centerY, adjustedSmallRadius);
-        }
-
-        updateGraphics(scene, graphics, centerX, centerY, baseCircleRadius, smallCircleRadius);
+        Utils.updateGraphics(scene, graphics, centerX, centerY, baseCircleRadius, smallCircleRadius, initialZoom);
 
         this.input.on('wheel', (pointer, gameObjects, deltaX, deltaY, deltaZ) => {
             let oldZoom = scene.cameras.main.zoom;
@@ -505,7 +486,7 @@ document.addEventListener('DOMContentLoaded', (event) => {
                 }
             });
         
-            updateGraphics(scene, graphics, centerX, centerY, baseCircleRadius, smallCircleRadius);
+            Utils.updateGraphics(scene, graphics, centerX, centerY, baseCircleRadius, smallCircleRadius, initialZoom);
         });        
 
         document.getElementById('spawn').addEventListener('click', function () {
@@ -569,10 +550,10 @@ document.addEventListener('DOMContentLoaded', (event) => {
                 aircraft.handedOff = false;
                 aircraft.runway = null;
                 aircraft.labelVisible = true;
-                orientToField(aircraft, centerX, centerY);
+                Utils.orientToField(aircraft, centerX, centerY);
                 aircraft.currentHeading = aircraft.angle;
                 aircraft.targetHeading = aircraft.angle;
-                adjustMovement(aircraft);
+                Utils.adjustMovement(aircraft);
             } else if (!spawnButtonClicked && !hitSprite) {
                 scene.isDragging = true;
                 let zoom = scene.cameras.main.zoom;
@@ -806,7 +787,7 @@ document.addEventListener('DOMContentLoaded', (event) => {
                         if (dragged) {
                             selectedAircraft.targetHeading = assignedHeading;
                         }
-                        adjustMovement(selectedAircraft);
+                        Utils.adjustMovement(selectedAircraft);
                         selectedAircraft = null;
                         altitudeMenu.setVisible(false);
                     });
@@ -827,7 +808,7 @@ document.addEventListener('DOMContentLoaded', (event) => {
             if (!selectedAircraft || assignedHeading === null) return;
             
             selectedAircraft.targetHeading = assignedHeading;
-            adjustMovement(selectedAircraft);
+            Utils.adjustMovement(selectedAircraft);
             selectedAircraft = null;
             event.stopPropagation();
         });
@@ -862,7 +843,7 @@ document.addEventListener('DOMContentLoaded', (event) => {
                         selectedAircraft.isCleared = true;
                         selectedAircraft.targetAltitude = alt;
                         selectedAircraft.targetHeading = assignedHeading;
-                        adjustMovement(selectedAircraft);
+                        Utils.adjustMovement(selectedAircraft);
                         selectedAircraft = null;
                         altitudeMenu.setVisible(false);
                     });
@@ -911,7 +892,7 @@ document.addEventListener('DOMContentLoaded', (event) => {
                     bg.on('pointerdown', () => {
                         selectedAircraft.targetAltitude = alt;
                         selectedAircraft.targetHeading = assignedHeading;
-                        adjustMovement(selectedAircraft);
+                        Utils.adjustMovement(selectedAircraft);
                         selectedAircraft = null;
                         altitudeMenu.setVisible(false);
                     });
@@ -953,7 +934,7 @@ document.addEventListener('DOMContentLoaded', (event) => {
         aircrafts.forEach(aircraft => {
             if (aircraft.altitude < 10500 && aircraft.airspeed > 250) {
                 aircraft.targetSpeed = 250;
-                adjustMovement(aircraft);
+                Utils.adjustMovement(aircraft);
             }
             if (aircraft.label) {
                 let altitudeShort = Math.round(aircraft.altitude / 100);
@@ -1011,7 +992,7 @@ document.addEventListener('DOMContentLoaded', (event) => {
                     aircraft.angle += Math.sign(delta) * maxDelta;
                 }
         
-                adjustMovement(aircraft);
+                Utils.adjustMovement(aircraft);
             }
             if (aircraft.approach == "ILS") {
                 let headingRad = Phaser.Math.DegToRad(aircraft.angle - 90); // Adjust so 0° is up
@@ -1048,14 +1029,14 @@ document.addEventListener('DOMContentLoaded', (event) => {
                     if (validIntercept && aircraft.isCleared && isEastOfAirport && isOnInterceptHeading && Math.abs(aircraft.y - centerY) <= 6.5) {
                         aircraft.targetHeading = 270;
                         aircraft.isEstablished = true;
-                        adjustMovement(aircraft);
+                        Utils.adjustMovement(aircraft);
                     }
                 }
             } else if (aircraft.approach == "RV") {
                 let isEastOfAirport = aircraft.x > centerX;
                 if (aircraft.isCleared && isEastOfAirport && Math.abs(aircraft.y - centerY) <= 1.5) {
                     aircraft.angle = 270;
-                    adjustMovement(aircraft);
+                    Utils.adjustMovement(aircraft);
                     aircraft.isEstablished = true;
                 }
             } else if (aircraft.approach == "VIS") {
@@ -1077,7 +1058,7 @@ document.addEventListener('DOMContentLoaded', (event) => {
                 if (aircraft.isCleared && isEastOfAirport && Math.abs(aircraft.y - centerY) <= 1.5) {
                     aircraft.angle = 270;
                     aircraft.isEstablished = true;
-                    adjustMovement(aircraft);
+                    Utils.adjustMovement(aircraft);
                 }
             }
             if (aircraft.isEstablished && aircraft.x <= centerX) {
@@ -1110,7 +1091,7 @@ document.addEventListener('DOMContentLoaded', (event) => {
                         fill: '#ffffff'
                     }).setOrigin(0.5);
                     aircrafts.push(newAircraft);
-                    adjustMovement(newAircraft);
+                    Utils.adjustMovement(newAircraft);
                 }
                 return;
             }
@@ -1127,7 +1108,7 @@ document.addEventListener('DOMContentLoaded', (event) => {
                     delete aircraft.targetSpeed;
                 }
             
-                adjustMovement(aircraft); // Reapply movement when speed changes
+                Utils.adjustMovement(aircraft); // Reapply movement when speed changes
             }
             if (aircraft.isEstablished) {
                 let distanceToAirportPx = Math.sqrt((centerX - aircraft.x) ** 2 + (centerY - aircraft.y) ** 2);
@@ -1197,56 +1178,15 @@ document.addEventListener('DOMContentLoaded', (event) => {
             }
         });
         let zoom = game.scene.keys.default.cameras.main.zoom;
-        if (confirmMenu.visible) {
-            confirmMenu.setScale(1 / zoom);
-        }
-        if (altitudeMenu.visible) {
-            altitudeMenu.setScale(1 / zoom);
-        }     
-        if (generalMenu.visible) {
-            generalMenu.setScale(1 / zoom);
-        }   
-        if (contactMenu.visible) {
-            contactMenu.setScale(1 / zoom);
-        }   
-        if (speedMenu.visible) {
-            speedMenu.setScale(1 / zoom);
-        }   
-        if (maintainSpeedMenu.visible) {
-            maintainSpeedMenu.setScale(1 / zoom);
-        }
-        if (maintainSpeedActionMenu.visible) {
-            maintainSpeedActionMenu.setScale(1 / zoom);
-        }
-        if (runwayMenu.visible) {
-            runwayMenu.setScale(1 / zoom);
-        }          
-        if (expectApproachMenu.visible) {
-            expectApproachMenu.setScale(1 / zoom);
-        }
-    }
-
-    function adjustMovement(aircraft) {
-        let groundspeed = 0.003373155 * aircraft.altitude + aircraft.airspeed;
-        let spriteSpeed = (groundspeed / 3128) * 29.1;
-        let angleRadians = Phaser.Math.DegToRad(aircraft.angle);
-        let velocityX = spriteSpeed * Math.sin(angleRadians);
-        let velocityY = -spriteSpeed * Math.cos(angleRadians);
-        aircraft.setVelocity(velocityX, velocityY);
-    }
-
-    function orientToField(aircraft, centerX, centerY) {
-        var aircraftX = aircraft.x;
-        var aircraftY = aircraft.y;
-        var angleToCenter = Math.atan2(centerY - aircraftY, centerX - aircraftX);
-        var angleDegrees = Phaser.Math.RadToDeg(angleToCenter);
-        aircraft.angle = angleDegrees + 90;
-    }
-
-    function calculateGameHeight() {
-        var navbarHeight = document.querySelector('.navbar').offsetHeight;
-        var windowHeight = window.innerHeight;
-        return windowHeight - navbarHeight;
+        if (confirmMenu.visible) confirmMenu.setScale(1 / zoom);
+        if (altitudeMenu.visible) altitudeMenu.setScale(1 / zoom);   
+        if (generalMenu.visible) generalMenu.setScale(1 / zoom);
+        if (contactMenu.visible) contactMenu.setScale(1 / zoom);
+        if (speedMenu.visible) speedMenu.setScale(1 / zoom); 
+        if (maintainSpeedMenu.visible) maintainSpeedMenu.setScale(1 / zoom);
+        if (maintainSpeedActionMenu.visible) maintainSpeedActionMenu.setScale(1 / zoom);
+        if (runwayMenu.visible) runwayMenu.setScale(1 / zoom);  
+        if (expectApproachMenu.visible) expectApproachMenu.setScale(1 / zoom);
     }
 
     function broadcastAircraftState() {
