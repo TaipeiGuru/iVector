@@ -3,12 +3,17 @@ window.socket = new WebSocket('ws://localhost:3000');
 
 function displaySessionCode(code) {
     const shareBtn = document.getElementById('share');
-    const sessionField = document.getElementById('sessionCodeField');
+    const sessionBtn = document.getElementById('sessionCodeBtn');
 
     if (shareBtn) shareBtn.style.display = 'none';
-    if (sessionField) {
-        sessionField.style.display = 'inline-block';
-        sessionField.value = code;
+    if (sessionBtn) {
+        sessionBtn.style.display = 'inline-block';
+        sessionBtn.textContent = code;
+        sessionBtn.disabled = true;
+        sessionBtn.style.backgroundColor = 'white';
+        sessionBtn.style.color = 'black';
+        sessionBtn.style.border = 'none';
+        sessionBtn.style.cursor = 'default';
     }
 }
 
@@ -505,6 +510,14 @@ document.addEventListener('DOMContentLoaded', (event) => {
 
         document.getElementById('spawn').addEventListener('click', function () {
             spawnButtonClicked = !spawnButtonClicked;
+            let btn = document.getElementById('spawn');
+            if (spawnButtonClicked) {
+                btn.style.backgroundColor = 'white';
+                btn.style.color = 'black';
+            } else {
+                btn.style.backgroundColor = '#090808';
+                btn.style.color = '#6CB472';    
+            }
         });
 
         document.getElementById('endSession').addEventListener('click', function () {
