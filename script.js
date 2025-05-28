@@ -3,7 +3,13 @@ window.socket = new WebSocket('ws://localhost:3000');
 
 function displaySessionCode(code) {
     const shareBtn = document.getElementById('share');
-    if (shareBtn) shareBtn.textContent = code; // Update the button label
+    const sessionField = document.getElementById('sessionCodeField');
+
+    if (shareBtn) shareBtn.style.display = 'none';
+    if (sessionField) {
+        sessionField.style.display = 'inline-block';
+        sessionField.value = code;
+    }
 }
 
 window.socket.addEventListener('message', (event) => {
@@ -25,8 +31,7 @@ window.socket.addEventListener('message', (event) => {
 // === share button logic ===
 document.getElementById('share').addEventListener('click', () => {
     const shareBtn = document.getElementById('share');
-    shareBtn.disabled = true;
-    shareBtn.classList.add('disabled'); // optional styling
+    shareBtn.style.display = 'none';
     window.socket.send(JSON.stringify({ type: 'create_session' }));
 });
 
@@ -39,6 +44,7 @@ if (sessionCode) {
     const shareBtn = document.getElementById('share');
     if (shareBtn) {
         shareBtn.disabled = true;
+        shareBtn.classList.add('session-active'); 
     }
 }
 
@@ -64,6 +70,17 @@ function toggleStart() {
     var button = document.getElementById('start');
     button.classList.toggle('active');
 }
+function toggleEnd() {
+    var button = document.getElementById('endSession');
+    button.classList.toggle('active');
+    if (endSession) {
+        button.style.backgroundColor = '#090808';
+        button.style.color = '#6CB472';
+    } else {
+        button.style.backgroundColor = 'white';
+        button.style.color = 'black';
+    }
+}
 
 var spawnButtonClicked = false;
 var selectedAircraft = null;
@@ -88,6 +105,7 @@ var pointerDownX = 0;
 var pointerDownY = 0;
 var dragged = false;
 var timeSinceLastBroadcast = 0;
+var endSession = false;
 
 document.addEventListener('DOMContentLoaded', (event) => {
     // game
@@ -487,6 +505,10 @@ document.addEventListener('DOMContentLoaded', (event) => {
 
         document.getElementById('spawn').addEventListener('click', function () {
             spawnButtonClicked = !spawnButtonClicked;
+        });
+
+        document.getElementById('endSession').addEventListener('click', function () {
+            endSession = !endSession;
         });
 
         scene.isDragging = false;
@@ -1051,30 +1073,32 @@ document.addEventListener('DOMContentLoaded', (event) => {
                 }
                 aircraft.destroy();
                 aircrafts = aircrafts.filter(a => a !== aircraft);
-
-                let newAircraft = this.physics.add.sprite(centerX, centerY, 'aircraft');
-                newAircraft.setScale((this.cameras.main.height * 0.0002) / this.cameras.main.zoom);
-                newAircraft.angle = 270;
-                newAircraft.altitude = 500;
-                newAircraft.targetAltitude = 3000;
-                newAircraft.airspeed = 200;
-                newAircraft.setInteractive();
-                newAircraft.approach = null; 
-                newAircraft.isCleared = false;
-                newAircraft.lookForAirport = false;
-                newAircraft.isEstablished = false;
-                newAircraft.startedDescent = false;
-                newAircraft.handedOff = false;
-                newAircraft.runway = null;
-                newAircraft.currentHeading = newAircraft.angle;
-                newAircraft.targetHeading = newAircraft.angle;
-                newAircraft.label = this.add.text(newAircraft.x, newAircraft.y - 30, '', {
-                    fontFamily: 'Arial',
-                    fontSize: '14px',
-                    fill: '#ffffff'
-                }).setOrigin(0.5);
-                aircrafts.push(newAircraft);
-                adjustMovement(newAircraft);
+                console.log(endSession);
+                if (!endSession) {
+                    let newAircraft = this.physics.add.sprite(centerX, centerY, 'aircraft');
+                    newAircraft.setScale((this.cameras.main.height * 0.0002) / this.cameras.main.zoom);
+                    newAircraft.angle = 270;
+                    newAircraft.altitude = 500;
+                    newAircraft.targetAltitude = 3000;
+                    newAircraft.airspeed = 200;
+                    newAircraft.setInteractive();
+                    newAircraft.approach = null; 
+                    newAircraft.isCleared = false;
+                    newAircraft.lookForAirport = false;
+                    newAircraft.isEstablished = false;
+                    newAircraft.startedDescent = false;
+                    newAircraft.handedOff = false;
+                    newAircraft.runway = null;
+                    newAircraft.currentHeading = newAircraft.angle;
+                    newAircraft.targetHeading = newAircraft.angle;
+                    newAircraft.label = this.add.text(newAircraft.x, newAircraft.y - 30, '', {
+                        fontFamily: 'Arial',
+                        fontSize: '14px',
+                        fill: '#ffffff'
+                    }).setOrigin(0.5);
+                    aircrafts.push(newAircraft);
+                    adjustMovement(newAircraft);
+                }
                 return;
             }
             if (aircraft.targetSpeed !== undefined && aircraft.airspeed !== aircraft.targetSpeed) {

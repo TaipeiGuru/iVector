@@ -99,36 +99,52 @@ body {
 }
 
 .button {
-  background-color: #090808;
-  border-radius: 10px;
-  border-style: solid;
-  box-sizing: border-box;
-  color: #6CB472;
-  cursor: pointer;
-  display: inline-block;
-  font-family: "Farfetch Basis","Helvetica Neue",Arial,sans-serif;
-  font-size: 13px;
-  font-weight: 700;
-  line-height: 1.5;
-  margin: 0;
-  max-width: none;
-  min-width: 10px;
-  outline: none;
-  overflow: hidden;
-  padding: 2% 2% 2% 2%;
-  position: relative;
-  text-align: center;
-  text-transform: none;
-  user-select: none;
-  -webkit-user-select: none;
-  touch-action: manipulation;
-  width: fit-content;
-}
+    background-color: #090808;
+    border-radius: 10px;
+    border-style: solid;
+    box-sizing: border-box;
+    color: #6CB472;
+    cursor: pointer;
+    display: inline-block;
+    font-family: "Farfetch Basis","Helvetica Neue",Arial,sans-serif;
+    font-size: 13px;
+    font-weight: 700;
+    line-height: 1.5;
+    margin: 0;
+    max-width: none;
+    min-width: 10px;
+    outline: none;
+    overflow: hidden;
+    padding: 8px 12px; /* Changed from percentage to fixed pixels */
+    position: relative;
+    text-align: center;
+    text-transform: none;
+    user-select: none;
+    -webkit-user-select: none;
+    touch-action: manipulation;
+    width: auto;
+    white-space: nowrap; /* Prevents text wrapping */
+    min-width: 120px; /* Ensures minimum button width */
+  }
+  
+  /* Add a specific class for when the button shows session ID */
+  .button.session-active {
+    font-size: 11px; /* Slightly smaller font for session IDs */
+    padding: 8px 10px;
+    max-width: 200px; /* Limit maximum width */
+    overflow: hidden;
+    text-overflow: ellipsis; /* Add "..." if text is too long */
+  }
 
-.button.active {
-    background-color: white;
-    color: #090808;
-}
+  #sessionCodeText {
+    font-family: 'Century Gothic', Helvetica;
+    font-size: 13px;
+    background-color: #0A0A0A;
+    padding: 6px 10px;
+    border-radius: 6px;
+    border: 1px solid #6CB472;
+    color: #6CB472;
+  }
 
 #canvasdiv {
     width: 100%;
