@@ -35,5 +35,48 @@ window.Utils = {
         graphics.fillCircle(centerX, centerY, adjustedBaseRadius);
         graphics.fillStyle(0x94ee8d, 1);
         graphics.fillCircle(centerX, centerY, adjustedSmallRadius);
+    },
+    checkBounds: function(worldX, worldY, bounds) {
+        return (
+            worldX < bounds.x ||
+            worldX > bounds.x + bounds.width ||
+            worldY < bounds.y ||
+            worldY > bounds.y + bounds.height
+        );
+    },
+    createNewAircraft: function(scene, aircraft, scale, centerX, centerY, inbound) {
+        aircraft.setScale(scale);
+        if (inbound) { 
+            aircraft.altitude = 100 * Math.floor(Math.random() * 80 + 40);
+            aircraft.airspeed = Math.floor(Math.random() * 100 + 200);
+            let selectedApproach = document.getElementById('approachSelect').value;
+            aircraft.approach = selectedApproach || 'ILS'; // fallback to ILS
+            if (aircraft.altitude < 10000 && aircraft.airspeed > 250) {
+                aircraft.airspeed = 250;
+            }
+        } else {
+            aircraft.angle = 270;
+            aircraft.altitude = 500;
+            aircraft.targetAltitude = 3000;
+            aircraft.airspeed = 200;
+        }
+        aircraft.setInteractive();
+        aircraft.label = scene.add.text(aircraft.x, aircraft.y - 30, '', {
+            fontFamily: 'Arial',
+            fontSize: '14px',
+            fill: '#ffffff'
+        }).setOrigin(0.5);
+        aircraft.isCleared = false;
+        aircraft.lookForAirport = false;
+        aircraft.isEstablished = false;
+        aircraft.startedDescent = false;
+        aircraft.hasInSight = false;
+        aircraft.handedOff = false;
+        aircraft.runway = null;
+        aircraft.labelVisible = true;
+        if (inbound) this.orientToField(aircraft, centerX, centerY); 
+        aircraft.currentHeading = aircraft.angle;
+        aircraft.targetHeading = aircraft.angle;
+        this.adjustMovement(aircraft);
     }
 };

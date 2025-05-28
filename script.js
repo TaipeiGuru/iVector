@@ -1,6 +1,5 @@
-// === snippet inside script.js where socket is set up ===
+// multiplayer logic
 window.socket = new WebSocket('ws://localhost:3000');
-
 function displaySessionCode(code) {
     const shareBtn = document.getElementById('share');
     const sessionBtn = document.getElementById('sessionCodeBtn');
@@ -16,7 +15,6 @@ function displaySessionCode(code) {
         sessionBtn.style.cursor = 'default';
     }
 }
-
 window.socket.addEventListener('message', (event) => {
     const msg = JSON.parse(event.data);
 
@@ -32,19 +30,13 @@ window.socket.addEventListener('message', (event) => {
         broadcastAircraftState(); // Send state to new client
     }
 });
-
-// === share button logic ===
 document.getElementById('share').addEventListener('click', () => {
     const shareBtn = document.getElementById('share');
     shareBtn.style.display = 'none';
     window.socket.send(JSON.stringify({ type: 'create_session' }));
 });
-
-
-// === join session handling inside single.html ===
 const urlParams = new URLSearchParams(window.location.search);
 const sessionCode = urlParams.get('session');
-
 if (sessionCode) {
     const shareBtn = document.getElementById('share');
     if (shareBtn) {
@@ -52,7 +44,6 @@ if (sessionCode) {
         shareBtn.classList.add('session-active'); 
     }
 }
-
 const waitForSocket = setInterval(() => {
     if (window.socket && window.socket.readyState === WebSocket.OPEN && sessionCode) {
         window.socket.send(JSON.stringify({ type: 'join_session', sessionCode: sessionCode.toUpperCase() }));
@@ -60,7 +51,7 @@ const waitForSocket = setInterval(() => {
     }
 }, 200);
 
-
+// button logic
 function toggleSpawn() {
     var button = document.getElementById('spawn');
     var dropdown = document.getElementById('approachSelect');
@@ -526,34 +517,10 @@ document.addEventListener('DOMContentLoaded', (event) => {
             if (!hitSprite && spawnButtonClicked) {
                 var aircraft = scene.physics.add.sprite(worldPoint.x, worldPoint.y, 'aircraft');
                 let currentZoom = scene.cameras.main.zoom;
-                aircraft.setScale((scene.cameras.main.height * 0.0002) / currentZoom);
-                aircraft.altitude = 100 * Math.floor(Math.random() * 80 + 40);
-                aircraft.airspeed = Math.floor(Math.random() * 100 + 200)
-                let selectedApproach = document.getElementById('approachSelect').value;
-                aircraft.approach = selectedApproach || 'ILS'; // fallback to ILS
-                aircraft.setInteractive();
+                let scale = scene.cameras.main.height * 0.0002 / currentZoom;
+                Utils.createNewAircraft(scene, aircraft, scale, centerX, centerY, true);
                 aircrafts.push(aircraft);
                 broadcastAircraftState();
-                aircraft.label = scene.add.text(aircraft.x, aircraft.y - 30, '', {
-                    fontFamily: 'Arial',
-                    fontSize: '14px',
-                    fill: '#ffffff'
-                }).setOrigin(0.5);
-                if (aircraft.altitude < 10000 && aircraft.airspeed > 250) {
-                    aircraft.airspeed = 250;
-                }
-                aircraft.isCleared = false;
-                aircraft.lookForAirport = false;
-                aircraft.isEstablished = false;
-                aircraft.startedDescent = false;
-                aircraft.hasInSight = false;
-                aircraft.handedOff = false;
-                aircraft.runway = null;
-                aircraft.labelVisible = true;
-                Utils.orientToField(aircraft, centerX, centerY);
-                aircraft.currentHeading = aircraft.angle;
-                aircraft.targetHeading = aircraft.angle;
-                Utils.adjustMovement(aircraft);
             } else if (!spawnButtonClicked && !hitSprite) {
                 scene.isDragging = true;
                 let zoom = scene.cameras.main.zoom;
@@ -638,114 +605,42 @@ document.addEventListener('DOMContentLoaded', (event) => {
                     suppressConfirmMenu = true;
                 }
             }
-            if (altitudeMenu.visible) {
-                let bounds = altitudeMenu.getBounds();
-                if (
-                    worldX < bounds.x ||
-                    worldX > bounds.x + bounds.width ||
-                    worldY < bounds.y ||
-                    worldY > bounds.y + bounds.height
-                ) {
-                    altitudeMenu.setVisible(false);
-                    selectedAircraft = null;
-                }
+            if (altitudeMenu.visible && Utils.checkBounds(worldX, worldY, altitudeMenu.getBounds())) {
+                altitudeMenu.setVisible(false);
+                selectedAircraft = null;
             }
-            if (generalMenu.visible) {
-                let bounds = generalMenu.getBounds();
-                if (
-                    worldX < bounds.x ||
-                    worldX > bounds.x + bounds.width ||
-                    worldY < bounds.y ||
-                    worldY > bounds.y + bounds.height
-                ) {
-                    generalMenu.setVisible(false);
-                    selectedAircraft = null;
-                }
+            if (generalMenu.visible && Utils.checkBounds(worldX, worldY, generalMenu.getBounds())) {
+                generalMenu.setVisible(false);
+                selectedAircraft = null;
             }
-            if (contactMenu.visible) {
-                let bounds = contactMenu.getBounds();
-                if (
-                    worldX < bounds.x ||
-                    worldX > bounds.x + bounds.width ||
-                    worldY < bounds.y ||
-                    worldY > bounds.y + bounds.height
-                ) {
-                    contactMenu.setVisible(false);
-                    selectedAircraft = null;
-                }
+            if (contactMenu.visible && Utils.checkBounds(worldX, worldY, contactMenu.getBounds())) {
+                contactMenu.setVisible(false);
+                selectedAircraft = null;
             }
-            if (speedMenu.visible) {
-                let bounds = speedMenu.getBounds();
-                if (
-                    worldX < bounds.x ||
-                    worldX > bounds.x + bounds.width ||
-                    worldY < bounds.y ||
-                    worldY > bounds.y + bounds.height
-                ) {
-                    speedMenu.setVisible(false);
-                    selectedAircraft = null;
-                }
-            }  
-            if (approachSpeedMenu.visible) {
-                let bounds = approachSpeedMenu.getBounds();
-                if (
-                    worldX < bounds.x ||
-                    worldX > bounds.x + bounds.width ||
-                    worldY < bounds.y ||
-                    worldY > bounds.y + bounds.height
-                ) {
-                    approachSpeedMenu.setVisible(false);
-                    selectedAircraft = null;
-                }
+            if (speedMenu.visible && Utils.checkBounds(worldX, worldY, speedMenu.getBounds())) {
+                speedMenu.setVisible(false);
+                selectedAircraft = null;
             }
-            if (maintainSpeedMenu.visible) {
-                let bounds = maintainSpeedMenu.getBounds();
-                if (
-                    worldX < bounds.x ||
-                    worldX > bounds.x + bounds.width ||
-                    worldY < bounds.y ||
-                    worldY > bounds.y + bounds.height
-                ) {
-                    maintainSpeedMenu.setVisible(false);
-                    selectedAircraft = null;
-                }
+            if (approachSpeedMenu.visible && Utils.checkBounds(worldX, worldY, approachSpeedMenu.getBounds())) {
+                approachSpeedMenu.setVisible(false);
+                selectedAircraft = null;
+            }
+            if (maintainSpeedMenu.visible && Utils.checkBounds(worldX, worldY, maintainSpeedMenu.getBounds())) {
+                maintainSpeedMenu.setVisible(false);
+                selectedAircraft = null;
             } 
-            if (maintainSpeedActionMenu.visible) {
-                let bounds = maintainSpeedActionMenu.getBounds();
-                if (
-                    worldX < bounds.x ||
-                    worldX > bounds.x + bounds.width ||
-                    worldY < bounds.y ||
-                    worldY > bounds.y + bounds.height
-                ) {
-                    maintainSpeedActionMenu.setVisible(false);
-                    selectedAircraft = null;
-                    pendingSpeed = null;
-                }
+            if (maintainSpeedActionMenu.visible && Utils.checkBounds(worldX, worldY, maintainSpeedActionMenu.getBounds())) {
+                maintainSpeedActionMenu.setVisible(false);
+                selectedAircraft = null;
+                pendingSpeed = null;
             }   
-            if (runwayMenu.visible) {
-                let bounds = runwayMenu.getBounds();
-                if (
-                    worldX < bounds.x ||
-                    worldX > bounds.x + bounds.width ||
-                    worldY < bounds.y ||
-                    worldY > bounds.y + bounds.height
-                ) {
-                    runwayMenu.setVisible(false);
-                    selectedAircraft = null;
-                }
+            if (runwayMenu.visible && Utils.checkBounds(worldX, worldY, runwayMenu.getBounds())) {
+                runwayMenu.setVisible(false);
+                selectedAircraft = null;
             }
-            if (expectApproachMenu.visible) {
-                let bounds = expectApproachMenu.getBounds();
-                if (
-                    worldX < bounds.x ||
-                    worldX > bounds.x + bounds.width ||
-                    worldY < bounds.y ||
-                    worldY > bounds.y + bounds.height
-                ) {
-                    expectApproachMenu.setVisible(false);
-                    selectedAircraft = null;
-                }
+            if (expectApproachMenu.visible && Utils.checkBounds(worldX, worldY, expectApproachMenu.getBounds())) {
+                expectApproachMenu.setVisible(false);
+                selectedAircraft = null;
             }
         });
 
@@ -1062,36 +957,15 @@ document.addEventListener('DOMContentLoaded', (event) => {
                 }
             }
             if (aircraft.isEstablished && aircraft.x <= centerX) {
-                if (aircraft.label) {
-                    aircraft.label.destroy();
-                }
+                if (aircraft.label) aircraft.label.destroy();
                 aircraft.destroy();
                 aircrafts = aircrafts.filter(a => a !== aircraft);
-                console.log(endSession);
                 if (!endSession) {
                     let newAircraft = this.physics.add.sprite(centerX, centerY, 'aircraft');
-                    newAircraft.setScale((this.cameras.main.height * 0.0002) / this.cameras.main.zoom);
-                    newAircraft.angle = 270;
-                    newAircraft.altitude = 500;
-                    newAircraft.targetAltitude = 3000;
-                    newAircraft.airspeed = 200;
-                    newAircraft.setInteractive();
-                    newAircraft.approach = null; 
-                    newAircraft.isCleared = false;
-                    newAircraft.lookForAirport = false;
-                    newAircraft.isEstablished = false;
-                    newAircraft.startedDescent = false;
-                    newAircraft.handedOff = false;
-                    newAircraft.runway = null;
-                    newAircraft.currentHeading = newAircraft.angle;
-                    newAircraft.targetHeading = newAircraft.angle;
-                    newAircraft.label = this.add.text(newAircraft.x, newAircraft.y - 30, '', {
-                        fontFamily: 'Arial',
-                        fontSize: '14px',
-                        fill: '#ffffff'
-                    }).setOrigin(0.5);
+                    let scale = this.cameras.main.height * 0.0002 / this.cameras.main.zoom;
+                    Utils.createNewAircraft(this, newAircraft, scale, centerX, centerY, false);
                     aircrafts.push(newAircraft);
-                    Utils.adjustMovement(newAircraft);
+                    broadcastAircraftState();
                 }
                 return;
             }
