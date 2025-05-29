@@ -60,7 +60,7 @@ window.Utils = {
             worldY > bounds.y + bounds.height
         );
     },
-    createNewAircraft: function(scene, aircraft, scale, centerX, centerY, inbound) {
+    createNewAircraft: function(scene, aircraft, scale, centerX, centerY, inbound, host) {
         aircraft.setScale(scale);
         if (inbound) { 
             aircraft.altitude = 100 * Math.floor(Math.random() * 80 + 40);
@@ -76,7 +76,7 @@ window.Utils = {
             aircraft.targetAltitude = 3000;
             aircraft.airspeed = 200;
         }
-        aircraft.setInteractive();
+        if (host) aircraft.setInteractive();
         aircraft.label = scene.add.text(aircraft.x, aircraft.y - 30, '', {
             fontFamily: 'Arial',
             fontSize: '14px',
@@ -94,5 +94,80 @@ window.Utils = {
         aircraft.currentHeading = aircraft.angle;
         aircraft.targetHeading = aircraft.angle;
         this.adjustMovement(aircraft);
+    },
+    menuVisible: function(pointer, scene, altitudeMenu, generalMenu, contactMenu, speedMenu, approachSpeedMenu, maintainSpeedMenu, maintainSpeedActionMenu, runwayMenu, expectApproachMenu) {
+        const camera = scene.cameras.main;
+        const worldX = camera.getWorldPoint(pointer.x, pointer.y).x;
+        const worldY = camera.getWorldPoint(pointer.x, pointer.y).y;
+        if (altitudeMenu.visible && this.checkBounds(worldX, worldY, altitudeMenu.getBounds())) {
+            altitudeMenu.setVisible(false);
+            return true;
+        }
+        if (generalMenu.visible && this.checkBounds(worldX, worldY, generalMenu.getBounds())) {
+            generalMenu.setVisible(false);
+            return true;
+        }
+        if (contactMenu.visible && this.checkBounds(worldX, worldY, contactMenu.getBounds())) {
+            contactMenu.setVisible(false);
+            return true;
+        }
+        if (speedMenu.visible && this.checkBounds(worldX, worldY, speedMenu.getBounds())) {
+            speedMenu.setVisible(false);
+            return true;
+        }
+        if (approachSpeedMenu.visible && this.checkBounds(worldX, worldY, approachSpeedMenu.getBounds())) {
+            approachSpeedMenu.setVisible(false);
+            return true;
+        }
+        if (maintainSpeedMenu.visible && this.checkBounds(worldX, worldY, maintainSpeedMenu.getBounds())) {
+            maintainSpeedMenu.setVisible(false);
+            return true;
+        } 
+        if (maintainSpeedActionMenu.visible && this.checkBounds(worldX, worldY, maintainSpeedActionMenu.getBounds())) {
+            maintainSpeedActionMenu.setVisible(false);
+            return true;
+        }   
+        if (runwayMenu.visible && this.checkBounds(worldX, worldY, runwayMenu.getBounds())) {
+            runwayMenu.setVisible(false);
+            return true;
+        }
+        if (expectApproachMenu.visible && this.checkBounds(worldX, worldY, expectApproachMenu.getBounds())) {
+            expectApproachMenu.setVisible(false);
+            return true;
+        }
+        return false;
+    },
+    redraw: function(dragged, scene, selectedAircraft, lineGraphics, mouseCircle, headingText) {
+        if (!dragged) {
+            return { success: false, heading: null };
+        }
+        lineGraphics.clear();
+        mouseCircle.clear();
+
+        var worldPoint = scene.input.activePointer.positionToCamera(scene.cameras.main);
+        var lineThickness = 3 / scene.cameras.main.zoom;
+
+        lineGraphics.lineStyle(lineThickness, 0xDD8AE6, 1);
+        lineGraphics.lineBetween(selectedAircraft.x, selectedAircraft.y, worldPoint.x, worldPoint.y);
+
+        mouseCircle.lineStyle(lineThickness, 0xDD8AE6, 1);
+        mouseCircle.strokeCircle(worldPoint.x, worldPoint.y, selectedAircraft.displayWidth / 4);
+
+        var dx = worldPoint.x - selectedAircraft.x;
+        var dy = selectedAircraft.y - worldPoint.y; 
+        var angleRad = Math.atan2(dx, dy); 
+        var angleDeg = Phaser.Math.RadToDeg(angleRad);
+        if (angleDeg < 0) angleDeg += 360;
+        var heading = Math.round(angleDeg / 10) * 10;
+
+        const deltaX = worldPoint.x - selectedAircraft.x;
+        const deltaY = worldPoint.y - selectedAircraft.y;
+        const pixelDistance = Math.sqrt(deltaX * deltaX + deltaY * deltaY);
+        const nmDistance = (pixelDistance / 300) * 11; // 300px = 11nm (adjust if needed)
+
+        headingText.setText(`${heading}°  ${Math.round(nmDistance)}nm`);
+        headingText.setPosition(worldPoint.x + 10, worldPoint.y - 30);
+        headingText.setVisible(true);
+        return { success: true, heading: heading };
     }
 };
