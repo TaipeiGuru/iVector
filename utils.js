@@ -18,7 +18,7 @@ window.Utils = {
         var angleDegrees = Phaser.Math.RadToDeg(angleToCenter);
         aircraft.angle = angleDegrees + 90;
     },
-    updateGraphics: function(scene, graphics, centerX, centerY, baseRadius, smallRadius, initialZoom) {
+    updateGraphics: function(scene, graphics, centerX, centerY, baseRadius, smallRadius, initialZoom, single) {
         graphics.clear();
         var zoomAdjustmentFactor = scene.cameras.main.zoom / initialZoom;
         var lineThickness = 1.5 / zoomAdjustmentFactor; // Adjusting line thickness inversely to zoom
@@ -26,10 +26,26 @@ window.Utils = {
         var adjustedSmallRadius = smallRadius / zoomAdjustmentFactor;
 
         graphics.lineStyle(lineThickness, 0x924a49, 1);
-        graphics.lineBetween(centerX, centerY, centerX + 300, centerY);
-        graphics.lineBetween(centerX, centerY, centerX + 300, centerY + 15);
-        graphics.lineBetween(centerX, centerY, centerX + 300, centerY - 15);
-        graphics.lineBetween(centerX + 300, centerY - 15, centerX + 300, centerY + 15);
+        
+        if (single) {
+            graphics.lineBetween(centerX, centerY, centerX + 300, centerY);
+            graphics.lineBetween(centerX, centerY, centerX + 300, centerY + 15);
+            graphics.lineBetween(centerX, centerY, centerX + 300, centerY - 15);
+            graphics.lineBetween(centerX + 300, centerY - 15, centerX + 300, centerY + 15);
+        } else {
+            var localizerOffset = 5; 
+            var upperY = centerY - localizerOffset;
+            graphics.lineBetween(centerX, upperY, centerX + 300, upperY);
+            graphics.lineBetween(centerX, upperY, centerX + 300, upperY + 15);
+            graphics.lineBetween(centerX, upperY, centerX + 300, upperY - 15);
+            graphics.lineBetween(centerX + 300, upperY - 15, centerX + 300, upperY + 15);
+            
+            var lowerY = centerY + localizerOffset;
+            graphics.lineBetween(centerX, lowerY, centerX + 300, lowerY);
+            graphics.lineBetween(centerX, lowerY, centerX + 300, lowerY + 15);
+            graphics.lineBetween(centerX, lowerY, centerX + 300, lowerY - 15);
+            graphics.lineBetween(centerX + 300, lowerY - 15, centerX + 300, lowerY + 15);
+        }
     
         graphics.fillStyle(0x2d86e2, 1);
         graphics.fillCircle(centerX, centerY, adjustedBaseRadius);

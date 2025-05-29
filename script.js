@@ -78,6 +78,7 @@ function toggleEnd() {
     }
 }
 
+var single;
 var spawnButtonClicked = false;
 var selectedAircraft = null;
 var mouseDown = false;
@@ -96,19 +97,30 @@ var maintainSpeedMenu;
 var maintainSpeedActionMenu;
 var runwayMenu;
 var expectApproachMenu;
+var expectVectorsMenu;
 var suppressConfirmMenu = false;
 var pointerDownX = 0;
 var pointerDownY = 0;
 var dragged = false;
 var timeSinceLastBroadcast = 0;
 var endSession = false;
+var pendingRunway = null;
+var runwayMap;
 
 document.addEventListener('DOMContentLoaded', (event) => {
+    let gameHeight;
+    try {
+        gameHeight = Utils.calculateGameHeight();
+    } catch (error) {
+        // Fallback if navbar is not found
+        gameHeight = window.innerHeight - 60; // assuming 60px navbar height
+    }
+    
     // game
     var config = {
         type: Phaser.AUTO,
         width: window.innerWidth,
-        height: Utils.calculateGameHeight(),
+        height: gameHeight,
         backgroundColor: '#1b1b1b',
         scene: {
             preload: preload,
@@ -130,9 +142,15 @@ document.addEventListener('DOMContentLoaded', (event) => {
     }
 
     function create() {
+        single = window.location.href.includes('single');
         var scene = this;
         var centerX = scene.cameras.main.worldView.x + scene.cameras.main.width / 2;
         var centerY = scene.cameras.main.worldView.y + scene.cameras.main.height / 2;
+        runwayMap = {
+            "27": centerY,
+            "27L": centerY - 5,
+            "27R": centerY + 5
+        }
         window.AIRPORT_X = centerX;
         window.AIRPORT_Y = centerY;
         var baseCircleRadius = scene.cameras.main.height * 0.015;
@@ -246,8 +264,8 @@ document.addEventListener('DOMContentLoaded', (event) => {
         let altitudeButtons = [];
 
         for (let i = 0; i < 10; i++) {
-            let bg = scene.add.rectangle(0, i * (altitudeBtnHeight + 4), altitudeBtnWidth, altitudeBtnHeight, 0x4A4A4A).setOrigin(0.5).setInteractive();
-            let text = scene.add.text(0, i * (altitudeBtnHeight + 4), '', {
+            let bg = scene.add.rectangle(0, i * (altitudeBtnHeight + 1), altitudeBtnWidth, altitudeBtnHeight, 0x4A4A4A).setOrigin(0.5).setInteractive();
+            let text = scene.add.text(0, i * (altitudeBtnHeight + 1), '', {
                 font: '13px Arial',
                 fill: '#FFFFFF'
             }).setOrigin(0.5);
@@ -417,6 +435,8 @@ document.addEventListener('DOMContentLoaded', (event) => {
         const expectBtnHeight = 30;
         const expectBtnWidth = 120;
 
+        expectVectorsMenu = scene.add.container(0, 0).setDepth(5).setVisible(false);
+
         expectOptions.forEach((label, index) => {
             let yOffset = index * (expectBtnHeight + 5);
             let bg = scene.add.rectangle(0, yOffset, expectBtnWidth, expectBtnHeight, 0x3A3A3A).setOrigin(0.5).setInteractive();
@@ -431,6 +451,43 @@ document.addEventListener('DOMContentLoaded', (event) => {
                 pendingApproachType = label;
                 const cam = scene.cameras.main;
                 const worldCenter = cam.getWorldPoint(cam.width / 2, cam.height / 2);
+        
+                runwayMenu.removeAll(true); // clear previous buttons
+                let runways = single ? ["27"] : ["27L", "27R"];
+                runways.forEach((r, i) => {
+                    let rb = scene.add.rectangle(0, i * 35, 80, 30, 0x3A3A3A).setOrigin(0.5).setInteractive();
+                    let rt = scene.add.text(0, i * 35, r, {
+                        font: '14px Arial',
+                        fill: '#FFFFFF'
+                    }).setOrigin(0.5);
+                    rb.on('pointerdown', () => {
+                        suppressConfirmMenu = true;
+                        runwayMenu.setVisible(false);
+                        pendingRunway = r;
+        
+                        expectVectorsMenu.removeAll(true);
+                        let evBtn = scene.add.rectangle(0, 0, 160, 30, 0x3A3A3A).setOrigin(0.5).setInteractive();
+                        let evText = scene.add.text(0, 0, "Expect Vectors", {
+                            font: '14px Arial',
+                            fill: '#FFFFFF'
+                        }).setOrigin(0.5);
+                        evBtn.on('pointerdown', () => {
+                            suppressConfirmMenu = true;
+                            expectVectorsMenu.setVisible(false);
+                            if (selectedAircraft) {
+                                selectedAircraft.approach = pendingApproachType;
+                                selectedAircraft.runway = pendingRunway;
+                                pendingApproachType = null;
+                                pendingRunway = null;
+                            }
+                        });
+                        expectVectorsMenu.add([evBtn, evText]);
+                        expectVectorsMenu.setPosition(worldCenter.x, worldCenter.y + 60);
+                        expectVectorsMenu.setVisible(true);
+                    });
+                    runwayMenu.add([rb, rt]);
+                });
+        
                 runwayMenu.setPosition(worldCenter.x, worldCenter.y);
                 runwayMenu.setVisible(true);
                 event.stopPropagation();
@@ -438,7 +495,7 @@ document.addEventListener('DOMContentLoaded', (event) => {
         
             expectApproachMenu.add([bg, text]);
         });
-
+        
         let pendingApproachType = null;
         runwayMenu = scene.add.container(0, 0).setDepth(4).setVisible(false);
         let runwayBtn = scene.add.rectangle(0, 0, 80, 30, 0x3A3A3A).setOrigin(0.5).setInteractive();
@@ -446,21 +503,10 @@ document.addEventListener('DOMContentLoaded', (event) => {
             font: '14px Arial',
             fill: '#FFFFFF'
         }).setOrigin(0.5);
-
-        runwayBtn.on('pointerdown', () => {
-            runwayMenu.setVisible(false);
-            suppressConfirmMenu = true;
-            if (selectedAircraft && pendingApproachType) {
-                selectedAircraft.approach = pendingApproachType;
-                selectedAircraft.runway = 27;
-                pendingApproachType = null;
-            }
-        });
         runwayMenu.add([runwayBtn, runwayText]);
 
         scene.physics.world.setBounds(0, 0, window.innerWidth, Utils.calculateGameHeight());
-
-        Utils.updateGraphics(scene, graphics, centerX, centerY, baseCircleRadius, smallCircleRadius, initialZoom);
+        Utils.updateGraphics(scene, graphics, centerX, centerY, baseCircleRadius, smallCircleRadius, initialZoom, single);
 
         this.input.on('wheel', (pointer, gameObjects, deltaX, deltaY, deltaZ) => {
             let oldZoom = scene.cameras.main.zoom;
@@ -477,7 +523,7 @@ document.addEventListener('DOMContentLoaded', (event) => {
                 }
             });
         
-            Utils.updateGraphics(scene, graphics, centerX, centerY, baseCircleRadius, smallCircleRadius, initialZoom);
+            Utils.updateGraphics(scene, graphics, centerX, centerY, baseCircleRadius, smallCircleRadius, initialZoom, single);
         });        
 
         document.getElementById('spawn').addEventListener('click', function () {
@@ -518,7 +564,7 @@ document.addEventListener('DOMContentLoaded', (event) => {
                 var aircraft = scene.physics.add.sprite(worldPoint.x, worldPoint.y, 'aircraft');
                 let currentZoom = scene.cameras.main.zoom;
                 let scale = scene.cameras.main.height * 0.0002 / currentZoom;
-                Utils.createNewAircraft(scene, aircraft, scale, centerX, centerY, true);
+                Utils.createNewAircraft(scene, aircraft, scale, centerX, centerY, true, null);
                 aircrafts.push(aircraft);
                 broadcastAircraftState();
             } else if (!spawnButtonClicked && !hitSprite) {
@@ -645,53 +691,9 @@ document.addEventListener('DOMContentLoaded', (event) => {
         });
 
         assignBtnBg.on('pointerdown', (event) => {
-            confirmMenu.setVisible(false);
-            suppressConfirmMenu = true; 
-            if (!selectedAircraft) return;
-        
-            // Calculate valid altitudes
-            let current = Math.floor(selectedAircraft.altitude / 1000) * 1000;
-            let options = [];
-        
-            // Higher altitudes (max 3, not above 18000)
-            for (let a = current + 3000; a <= 18000 && options.length < 3 && a > current; a -= 1000) {
-                options.push(a);
-            }
-        
-            // Current level
-            options.push(current);
-        
-            // Lower altitudes (fill up to 10 buttons)
-            for (let a = current - 1000; a >= 1000 && options.length < 10; a -= 1000) {
-                options.push(a);
-            }
-        
-            // Fill buttons
-            for (let i = 0; i < 10; i++) {
-                const { bg, text } = altitudeButtons[i];
-                const alt = options[i] ?? '';
-                bg.setVisible(alt !== '');
-                text.setVisible(alt !== '');
-                if (alt !== '') {
-                    text.setText(`${alt} ft`);
-                    bg.removeAllListeners();  // Clear old listeners
-                    bg.on('pointerdown', () => {
-                        selectedAircraft.isCleared = false;
-                        selectedAircraft.isEstablished = false;
-                        selectedAircraft.targetAltitude = alt;
-                        if (dragged) {
-                            selectedAircraft.targetHeading = assignedHeading;
-                        }
-                        Utils.adjustMovement(selectedAircraft);
-                        selectedAircraft = null;
-                        altitudeMenu.setVisible(false);
-                    });
-                }
-            }
             const cam = scene.cameras.main;
-            const worldCenter = cam.getWorldPoint(cam.width / 2, cam.height / 2);
-            altitudeMenu.setPosition(worldCenter.x, worldCenter.y);
-            altitudeMenu.setVisible(true);
+            EventHandlers.changeInput(selectedAircraft, altitudeButtons, dragged, altitudeMenu, cam, false);
+            selectedAircraft = null;
             event.stopPropagation();
         });        
 
@@ -709,94 +711,16 @@ document.addEventListener('DOMContentLoaded', (event) => {
         });
         
         clearApproachBtnBg.on('pointerdown', (event) => {
-            confirmMenu.setVisible(false);
-            suppressConfirmMenu = true; 
-            if (!selectedAircraft || assignedHeading === null) return;
-        
-            let current = Math.floor(selectedAircraft.altitude / 1000) * 1000;
-            let options = [];
-        
-            for (let a = current + 3000; a <= 18000 && options.length < 3 && a > current; a -= 1000) {
-                options.push(a);
-            }
-        
-            options.push(current);
-        
-            for (let a = current - 1000; a >= 1000 && options.length < 10; a -= 1000) {
-                options.push(a);
-            }
-        
-            for (let i = 0; i < 10; i++) {
-                const { bg, text } = altitudeButtons[i];
-                const alt = options[i] ?? '';
-                bg.setVisible(alt !== '');
-                text.setVisible(alt !== '');
-                if (alt !== '') {
-                    text.setText(`${alt} ft`);
-                    bg.removeAllListeners();
-                    bg.on('pointerdown', () => {
-                        selectedAircraft.isCleared = true;
-                        selectedAircraft.targetAltitude = alt;
-                        selectedAircraft.targetHeading = assignedHeading;
-                        Utils.adjustMovement(selectedAircraft);
-                        selectedAircraft = null;
-                        altitudeMenu.setVisible(false);
-                    });
-                }
-            }
             const cam = scene.cameras.main;
-            const worldCenter = cam.getWorldPoint(cam.width / 2, cam.height / 2);
-            altitudeMenu.setPosition(worldCenter.x, worldCenter.y);
-            altitudeMenu.setVisible(true);
+            EventHandlers.changeInput(selectedAircraft, altitudeButtons, dragged, altitudeMenu, cam, true);
+            selectedAircraft = null;
             event.stopPropagation();
         });        
         
         missedBtnBg.on('pointerdown', (event) => {
-            confirmMenu.setVisible(false);
-            selectedAircraft.isCleared = false;
-            selectedAircraft.isEstablished = false;
-            suppressConfirmMenu = true; 
-            if (!selectedAircraft || assignedHeading === null) return;
-        
-            // Calculate valid altitudes
-            let current = Math.floor(selectedAircraft.altitude / 1000) * 1000;
-            let options = [];
-        
-            // Higher altitudes (max 3, not above 18000)
-            for (let a = current + 3000; a <= 18000 && options.length < 3 && a > current; a -= 1000) {
-                options.push(a);
-            }
-        
-            // Current level
-            options.push(current);
-        
-            // Lower altitudes (fill up to 10 buttons)
-            for (let a = current - 1000; a >= 1000 && options.length < 10; a -= 1000) {
-                options.push(a);
-            }
-        
-            // Fill buttons
-            for (let i = 0; i < 10; i++) {
-                const { bg, text } = altitudeButtons[i];
-                const alt = options[i] ?? '';
-                bg.setVisible(alt !== '');
-                text.setVisible(alt !== '');
-                if (alt !== '') {
-                    text.setText(`${alt} ft`);
-                    bg.removeAllListeners();  // Clear old listeners
-                    bg.on('pointerdown', () => {
-                        selectedAircraft.targetAltitude = alt;
-                        selectedAircraft.targetHeading = assignedHeading;
-                        Utils.adjustMovement(selectedAircraft);
-                        selectedAircraft = null;
-                        altitudeMenu.setVisible(false);
-                    });
-                }
-            }
             const cam = scene.cameras.main;
-            const worldCenter = cam.getWorldPoint(cam.width / 2, cam.height / 2);
-            altitudeMenu.setPosition(worldCenter.x, worldCenter.y);
-            altitudeMenu.setVisible(true);
+            EventHandlers.changeInput(selectedAircraft, altitudeButtons, dragged, altitudeMenu, cam, false);
+            selectedAircraft = null;
             event.stopPropagation();
         });
 
@@ -889,19 +813,19 @@ document.addEventListener('DOMContentLoaded', (event) => {
         
                 Utils.adjustMovement(aircraft);
             }
+            let runwayY = runwayMap[aircraft.runway];
             if (aircraft.approach == "ILS") {
                 let headingRad = Phaser.Math.DegToRad(aircraft.angle - 90); // Adjust so 0° is up
                 let dx = Math.cos(headingRad);
                 let dy = Math.sin(headingRad);
                 let interceptDistance = null;
-
                 let interceptX = 0;
-                let interceptY = centerY;
+                let interceptY = runwayY;
                 if (Math.abs(dy) > 1e-6) {
-                    let t = (centerY - aircraft.y) / dy;
+                    let t = (runwayY - aircraft.y) / dy;
                     interceptX = aircraft.x + t * dx;
                     if (t > 0 && interceptX >= centerX) {
-                        let distPx = Math.sqrt((interceptX - centerX) ** 2 + (interceptY - centerY) ** 2);
+                        let distPx = Math.sqrt((interceptX - centerX) ** 2 + (interceptY - runwayY) ** 2);
                         interceptDistance = (distPx / 300) * 11;
                     }
                 }
@@ -918,10 +842,10 @@ document.addEventListener('DOMContentLoaded', (event) => {
                     let maxInterceptAlt = Math.tan(Phaser.Math.DegToRad(3)) * interceptDistance * 6076;
                     let validIntercept = projectedAltitude <= maxInterceptAlt + 100; 
                     let isEastOfAirport = aircraft.x > centerX;
-                    let isNorthOfLocalizer = aircraft.y < centerY;
+                    let isNorthOfLocalizer = aircraft.y < runwayY;
                     let requiredInterceptHeading = isNorthOfLocalizer ? 240 : 300;
                     let isOnInterceptHeading = Math.abs(aircraft.angle + 360 - requiredInterceptHeading) <= 5;
-                    if (validIntercept && aircraft.isCleared && isEastOfAirport && isOnInterceptHeading && Math.abs(aircraft.y - centerY) <= 6.5) {
+                    if (validIntercept && aircraft.isCleared && isEastOfAirport && isOnInterceptHeading && Math.abs(aircraft.y - runwayY) <= 6.5) {
                         aircraft.targetHeading = 270;
                         aircraft.isEstablished = true;
                         Utils.adjustMovement(aircraft);
@@ -929,7 +853,7 @@ document.addEventListener('DOMContentLoaded', (event) => {
                 }
             } else if (aircraft.approach == "RV") {
                 let isEastOfAirport = aircraft.x > centerX;
-                if (aircraft.isCleared && isEastOfAirport && Math.abs(aircraft.y - centerY) <= 1.5) {
+                if (aircraft.isCleared && isEastOfAirport && Math.abs(aircraft.y - runwayY) <= 1.5) {
                     aircraft.angle = 270;
                     Utils.adjustMovement(aircraft);
                     aircraft.isEstablished = true;
@@ -950,18 +874,19 @@ document.addEventListener('DOMContentLoaded', (event) => {
                     aircraft.hasInSight = false;
                 }
                 let isEastOfAirport = aircraft.x > centerX;
-                if (aircraft.isCleared && isEastOfAirport && Math.abs(aircraft.y - centerY) <= 1.5) {
+                if (aircraft.isCleared && isEastOfAirport && Math.abs(aircraft.y - runwayY) <= 1.5) {
                     aircraft.angle = 270;
                     aircraft.isEstablished = true;
                     Utils.adjustMovement(aircraft);
                 }
             }
             if (aircraft.isEstablished && aircraft.x <= centerX) {
+                let runway = aircraft.runway;
                 if (aircraft.label) aircraft.label.destroy();
                 aircraft.destroy();
                 aircrafts = aircrafts.filter(a => a !== aircraft);
                 if (!endSession) {
-                    let newAircraft = this.physics.add.sprite(centerX, centerY, 'aircraft');
+                    let newAircraft = this.physics.add.sprite(centerX, runwayMap[runway], 'aircraft');
                     let scale = this.cameras.main.height * 0.0002 / this.cameras.main.zoom;
                     Utils.createNewAircraft(this, newAircraft, scale, centerX, centerY, false);
                     aircrafts.push(newAircraft);
