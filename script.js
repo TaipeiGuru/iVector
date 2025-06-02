@@ -80,6 +80,7 @@ var pendingRunway = null;
 var planeCircle;
 var pointerDownX = 0;
 var pointerDownY = 0;
+var prevPointerCount = 0;
 var runwayMap;
 var runwayMenu;
 var spawnButtonClicked = false;
@@ -121,6 +122,7 @@ document.addEventListener('DOMContentLoaded', (event) => {
         this.load.image('off_freq', 'assets/off_freq.png');
         this.load.image('in_sight', 'assets/in_sight.png');
         this.load.image('bust', 'assets/bust.png');
+        this.load.scenePlugin('rexgesturesplugin', 'https://raw.githubusercontent.com/rexrainbow/phaser3-rex-notes/master/dist/rexgesturesplugin.min.js', 'rexGestures', 'rexGestures');
     }
 
     function create() {
@@ -508,7 +510,22 @@ document.addEventListener('DOMContentLoaded', (event) => {
             });
         
             Utils.updateGraphics(scene, graphics, centerX, centerY, baseCircleRadius, smallCircleRadius, initialZoom, single);
-        });        
+        });  
+
+        var pinch = this.rexGestures.add.pinch({ enable: true });
+
+
+        var camera = this.cameras.main;
+        var initialZoom = camera.zoom;
+
+        pinch.on('pinchstart', function () {
+            initialZoom = camera.zoom;
+        }, this);
+
+        pinch.on('pinch', function (pinch) {
+            console.log(pinch.scaleFactor);
+            camera.zoom = Phaser.Math.Clamp(initialZoom * pinch.scaleFactor, 0.5, 3);
+        }, this);
 
         document.getElementById('spawn').addEventListener('click', function () {
             spawnButtonClicked = !spawnButtonClicked;
