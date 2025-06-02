@@ -155,3 +155,8 @@ canvas {
     display: block; 
     background-color: navy; 
 }
+
+.join-group {
+    display: flex;
+    gap: 10px;
+}
