@@ -1,28 +1,14 @@
 var host = false;
 //  logic
 window.socket = new WebSocket('ws://localhost:3000');
-function displaySessionCode(code) {
-    const shareBtn = document.getElementById('share');
-    const sessionBtn = document.getElementById('sessionCodeBtn');
 
-    if (shareBtn) shareBtn.style.display = 'none';
-    if (sessionBtn) {
-        sessionBtn.style.display = 'inline-block';
-        sessionBtn.textContent = code;
-        sessionBtn.disabled = true;
-        sessionBtn.style.backgroundColor = 'white';
-        sessionBtn.style.color = 'black';
-        sessionBtn.style.border = 'none';
-        sessionBtn.style.cursor = 'default';
-    }
-}
 window.socket.addEventListener('message', (event) => {
     const msg = JSON.parse(event.data);
 
     if (msg.type === 'session_created') {
-        displaySessionCode(msg.sessionCode);
+        UtilsdisplaySessionCode(msg.sessionCode);
     } else if (msg.type === 'session_joined') {
-        displaySessionCode(msg.sessionCode);
+        Utils.displaySessionCode(msg.sessionCode);
     } else if (msg.type === 'game_state') {
         applyRemoteAircraftState?.(msg.state); // Optional sync logic
     } else if (msg.type === 'error') {
@@ -74,34 +60,34 @@ function toggleStart() {
     button.classList.toggle('active');
 }
 
-var single;
-var spawnButtonClicked = false;
-var selectedAircraft = null;
-var mouseDown = false;
-var planeCircle;
-var mouseCircle;
-var lineGraphics;
-var assignedHeading = null;
 var aircrafts = [];
-var confirmMenu;
 var altitudeMenu;
-var generalMenu;
-var contactMenu;
-var speedMenu;
 var approachSpeedMenu;
-var maintainSpeedMenu;
-var maintainSpeedActionMenu;
-var runwayMenu;
+var assignedHeading = null;
+var confirmMenu;
+var contactMenu;
+var dragged = false;
+var endSession = false;
 var expectApproachMenu;
 var expectVectorsMenu;
-var suppressConfirmMenu = false;
+var generalMenu;
+var lineGraphics;
+var maintainSpeedMenu;
+var maintainSpeedActionMenu;
+var mouseCircle;
+var mouseDown = false;
+var pendingRunway = null;
+var planeCircle;
 var pointerDownX = 0;
 var pointerDownY = 0;
-var dragged = false;
-var timeSinceLastBroadcast = 0;
-var endSession = false;
-var pendingRunway = null;
 var runwayMap;
+var runwayMenu;
+var spawnButtonClicked = false;
+var single;
+var selectedAircraft = null;
+var speedMenu;
+var suppressConfirmMenu = false;
+var timeSinceLastBroadcast = 0;
 
 document.addEventListener('DOMContentLoaded', (event) => {
     let gameHeight;

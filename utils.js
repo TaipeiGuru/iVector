@@ -169,5 +169,20 @@ window.Utils = {
         headingText.setPosition(worldPoint.x + 10, worldPoint.y - 30);
         headingText.setVisible(true);
         return { success: true, heading: heading };
+    },
+    displaySessionCode: function(code) {
+        const shareBtn = document.getElementById('share');
+        const sessionBtn = document.getElementById('sessionCodeBtn');
+    
+        if (shareBtn) shareBtn.style.display = 'none';
+        if (sessionBtn) {
+            sessionBtn.style.display = 'inline-block';
+            sessionBtn.textContent = code;
+            sessionBtn.disabled = true;
+            sessionBtn.style.backgroundColor = 'white';
+            sessionBtn.style.color = 'black';
+            sessionBtn.style.border = 'none';
+            sessionBtn.style.cursor = 'default';
+        }
     }
 };
