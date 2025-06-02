@@ -89,6 +89,7 @@ var selectedAircraft = null;
 var speedMenu;
 var suppressConfirmMenu = false;
 var timeSinceLastBroadcast = 0;
+var velocityLines;
 
 document.addEventListener('DOMContentLoaded', (event) => {
     let gameHeight;
@@ -144,6 +145,7 @@ document.addEventListener('DOMContentLoaded', (event) => {
         planeCircle = scene.add.graphics();
         mouseCircle = scene.add.graphics();
         lineGraphics = scene.add.graphics();
+        velocityLines = scene.add.graphics();
 
         var headingText = scene.add.text(0, 0, '', {
             font: '16px Arial',
@@ -343,6 +345,8 @@ document.addEventListener('DOMContentLoaded', (event) => {
                 if (selectedAircraft) {
                     selectedAircraft.targetSpeed = option.speed;
                 }
+                event.stopPropagation();
+                selectedAircraft = null;
             });
 
             approachSpeedMenu.add([bg, text]);
@@ -369,6 +373,7 @@ document.addEventListener('DOMContentLoaded', (event) => {
                 const pointer = scene.input.activePointer.positionToCamera(scene.cameras.main);
                 maintainSpeedActionMenu.setPosition(worldCenter.x, worldCenter.y);
                 maintainSpeedActionMenu.setVisible(true);
+                selectedAircraft = null;
                 event.stopPropagation();
             });
 
@@ -609,8 +614,19 @@ document.addEventListener('DOMContentLoaded', (event) => {
             
             this.isDragging = false;
             mouseDown = false;
+
+            let anyMenuVisible = 
+            altitudeMenu.visible || 
+            generalMenu.visible || 
+            contactMenu.visible || 
+            speedMenu.visible || 
+            approachSpeedMenu.visible || 
+            maintainSpeedMenu.visible || 
+            maintainSpeedActionMenu.visible || 
+            runwayMenu.visible || 
+            expectApproachMenu.visible;
         
-            if (selectedAircraft != null && !suppressConfirmMenu) {
+            if (selectedAircraft != null && !suppressConfirmMenu && !anyMenuVisible) {
                 var worldPoint = scene.input.activePointer.positionToCamera(scene.cameras.main);
                 confirmMenu.setPosition(worldPoint.x + 10, worldPoint.y + 10);
                 confirmMenu.setVisible(true);
@@ -683,6 +699,7 @@ document.addEventListener('DOMContentLoaded', (event) => {
     }
 
     function update(time, delta) {
+        velocityLines.clear();
         if (host) {
             timeSinceLastBroadcast += delta;
             if (timeSinceLastBroadcast > 1000) {
@@ -699,6 +716,17 @@ document.addEventListener('DOMContentLoaded', (event) => {
         }
 
         aircrafts.forEach(aircraft => {
+            if (aircraft.body && aircraft.body.velocity) {
+                const velocityX = aircraft.body.velocity.x;
+                const velocityY = aircraft.body.velocity.y;
+                const futureX = aircraft.x + (velocityX * 30);
+                const futureY = aircraft.y + (velocityY * 30);
+                velocityLines.lineStyle(2 / this.cameras.main.zoom, 0xFFFFFF, 0.8);
+                velocityLines.beginPath();
+                velocityLines.moveTo(aircraft.x, aircraft.y);
+                velocityLines.lineTo(futureX, futureY);
+                velocityLines.strokePath();
+            }
             if (aircraft.altitude < 10500 && aircraft.airspeed > 250) {
                 aircraft.targetSpeed = 250;
                 Utils.adjustMovement(aircraft);
