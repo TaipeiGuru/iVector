@@ -154,6 +154,7 @@ body {
 canvas {
     display: block; 
     background-color: navy; 
+    touch-action: none;
 }
 
 .join-group {

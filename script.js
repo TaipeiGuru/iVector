@@ -528,8 +528,10 @@ document.addEventListener('DOMContentLoaded', (event) => {
         }, this);
 
         pinch.on('pinch', function (pinch) {
-            console.log(pinch.scaleFactor);
-            camera.zoom = Phaser.Math.Clamp(initialZoom * pinch.scaleFactor, 0.5, 3);
+            // Calculate the change since the last event
+            console.log(Phaser.Math.Clamp(initialZoom * pinch.scaleFactor ** 100, 0.5, 3));
+            camera.zoom = Phaser.Math.Clamp(initialZoom * pinch.scaleFactor ** 100, 0.5, 3);
+
         }, this);
 
         document.getElementById('spawn').addEventListener('click', function () {
