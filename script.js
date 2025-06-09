@@ -6,7 +6,7 @@ window.socket.addEventListener('message', (event) => {
     const msg = JSON.parse(event.data);
 
     if (msg.type === 'session_created') {
-        UtilsdisplaySessionCode(msg.sessionCode);
+        Utils.displaySessionCode(msg.sessionCode);
     } else if (msg.type === 'session_joined') {
         Utils.displaySessionCode(msg.sessionCode);
     } else if (msg.type === 'game_state') {
@@ -90,6 +90,9 @@ var speedMenu;
 var suppressConfirmMenu = false;
 var timeSinceLastBroadcast = 0;
 var velocityLines;
+let isPinching = false;
+let pinchFocal = { x: null, y: null };
+let targetZoom = 1; // or whatever your initial zoom is
 
 document.addEventListener('DOMContentLoaded', (event) => {
     let gameHeight;
@@ -517,35 +520,6 @@ document.addEventListener('DOMContentLoaded', (event) => {
             Utils.updateGraphics(scene, graphics, centerX, centerY, baseCircleRadius, smallCircleRadius, initialZoom, single);
         });  
 
-        var pinch = this.rexGestures.add.pinch({ enable: true });
-
-
-        var camera = this.cameras.main;
-        var initialZoom = camera.zoom;
-
-        pinch.on('pinchstart', function () {
-            initialZoom = camera.zoom;
-        }, this);
-
-        pinch.on('pinch', function (pinch) {
-            const SENSITIVITY = 8;
-            let amplifiedScale = 1 + (pinch.scaleFactor - 1) * SENSITIVITY;
-            let newZoom = initialZoom * amplifiedScale;
-            
-            newZoom = Phaser.Math.Clamp(newZoom, 0.5, 3);
-            
-        
-            const worldPointBeforeZoom = camera.getWorldPoint(pinch.centerX, pinch.centerY);
-        
-            camera.setZoom(newZoom);
-        
-            const worldPointAfterZoom = camera.getWorldPoint(pinch.centerX, pinch.centerY);
-        
-            camera.scrollX += worldPointBeforeZoom.x - worldPointAfterZoom.x;
-            camera.scrollY += worldPointBeforeZoom.y - worldPointAfterZoom.y;
-        
-        }, this);
-
         document.getElementById('spawn').addEventListener('click', function () {
             spawnButtonClicked = !spawnButtonClicked;
             let btn = document.getElementById('spawn');
@@ -710,6 +684,18 @@ document.addEventListener('DOMContentLoaded', (event) => {
             event.stopPropagation();
         });
         
+        // Set up zoom in/out buttons
+        const ZOOM_STEP = 0.3;
+        const MIN_ZOOM = 0.3;
+        const MAX_ZOOM = 3;
+
+        document.getElementById('zoomInBtn').addEventListener('click', function () {
+            targetZoom = Math.min(scene.cameras.main.zoom + ZOOM_STEP, MAX_ZOOM);
+        });
+
+        document.getElementById('zoomOutBtn').addEventListener('click', function () {
+            targetZoom = Math.max(scene.cameras.main.zoom - ZOOM_STEP, MIN_ZOOM);
+        });
     }
 
     function update(time, delta) {
@@ -728,7 +714,6 @@ document.addEventListener('DOMContentLoaded', (event) => {
             planeCircle.lineStyle(3 / this.cameras.main.zoom, 0xDD8AE6, 1);
             planeCircle.strokeCircle(selectedAircraft.x, selectedAircraft.y, selectedAircraft.displayWidth / 4);
         }
-
         aircrafts.forEach(aircraft => {
             if (aircraft.body && aircraft.body.velocity) {
                 const velocityX = aircraft.body.velocity.x;
@@ -767,7 +752,7 @@ document.addEventListener('DOMContentLoaded', (event) => {
                 aircraft.labelVisible = true;
                 
                 // Scale label based on camera zoom
-                let zoom = game.scene.keys.default.cameras.main.zoom;
+                let zoom = this.cameras.main.zoom;
                 let baseZoom = 1.0;
                 aircraft.label.setScale(1 / zoom);  // Inverse scaling keeps size consistent on screen
             }
@@ -967,7 +952,7 @@ document.addEventListener('DOMContentLoaded', (event) => {
                 }
             }
         });
-        let zoom = game.scene.keys.default.cameras.main.zoom;
+        let zoom = this.cameras.main.zoom;
         if (confirmMenu.visible) confirmMenu.setScale(1 / zoom);
         if (altitudeMenu.visible) altitudeMenu.setScale(1 / zoom);   
         if (generalMenu.visible) generalMenu.setScale(1 / zoom);
@@ -977,6 +962,15 @@ document.addEventListener('DOMContentLoaded', (event) => {
         if (maintainSpeedActionMenu.visible) maintainSpeedActionMenu.setScale(1 / zoom);
         if (runwayMenu.visible) runwayMenu.setScale(1 / zoom);  
         if (expectApproachMenu.visible) expectApproachMenu.setScale(1 / zoom);
+
+        // Smooth zoom transition
+        const LERP_SPEED = 0.15; // 0.1-0.3 is a good range for smoothness
+        if (Math.abs(zoom - targetZoom) > 0.01) {
+            zoom += (targetZoom - zoom) * LERP_SPEED;
+        } else {
+            zoom = targetZoom; // Snap to target if very close
+        }
+        this.cameras.main.setZoom(zoom);
     }
 
     function broadcastAircraftState() {
@@ -1010,10 +1004,10 @@ document.addEventListener('DOMContentLoaded', (event) => {
         for (const s of remoteState) {
             let aircraft = aircrafts.find(a => a.id === s.id);
             if (!aircraft) {
-                aircraft = game.scene.keys.default.physics.add.sprite(s.x, s.y, 'aircraft');
-                aircraft.setScale((game.scene.keys.default.cameras.main.height * 0.0002) / game.scene.keys.default.cameras.main.zoom);
+                aircraft = this.physics.add.sprite(s.x, s.y, 'aircraft');
+                aircraft.setScale((this.cameras.main.height * 0.0002) / this.cameras.main.zoom);
                 aircraft.id = s.id;
-                aircraft.label = game.scene.keys.default.add.text(s.x, s.y - 30, '', {
+                aircraft.label = this.add.text(s.x, s.y - 30, '', {
                     fontFamily: 'Arial',
                     fontSize: '14px',
                     fill: '#ffffff'
@@ -1034,7 +1028,7 @@ document.addEventListener('DOMContentLoaded', (event) => {
             aircraft.handedOff = s.handedOff;
             if (s.labelVisible) {
                 if (!aircraft.label) {
-                    aircraft.label = game.scene.keys.default.add.text(aircraft.x, aircraft.y - 30, s.labelText, {
+                    aircraft.label = this.add.text(aircraft.x, aircraft.y - 30, s.labelText, {
                         fontFamily: 'Arial',
                         fontSize: '14px',
                         fill: '#ffffff'
