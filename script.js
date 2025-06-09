@@ -528,10 +528,22 @@ document.addEventListener('DOMContentLoaded', (event) => {
         }, this);
 
         pinch.on('pinch', function (pinch) {
-            // Calculate the change since the last event
-            console.log(Phaser.Math.Clamp(initialZoom * pinch.scaleFactor ** 100, 0.5, 3));
-            camera.zoom = Phaser.Math.Clamp(initialZoom * pinch.scaleFactor ** 100, 0.5, 3);
-
+            const SENSITIVITY = 8;
+            let amplifiedScale = 1 + (pinch.scaleFactor - 1) * SENSITIVITY;
+            let newZoom = initialZoom * amplifiedScale;
+            
+            newZoom = Phaser.Math.Clamp(newZoom, 0.5, 3);
+            
+        
+            const worldPointBeforeZoom = camera.getWorldPoint(pinch.centerX, pinch.centerY);
+        
+            camera.setZoom(newZoom);
+        
+            const worldPointAfterZoom = camera.getWorldPoint(pinch.centerX, pinch.centerY);
+        
+            camera.scrollX += worldPointBeforeZoom.x - worldPointAfterZoom.x;
+            camera.scrollY += worldPointBeforeZoom.y - worldPointAfterZoom.y;
+        
         }, this);
 
         document.getElementById('spawn').addEventListener('click', function () {
