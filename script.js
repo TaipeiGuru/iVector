@@ -94,6 +94,9 @@ let isPinching = false;
 let pinchFocal = { x: null, y: null };
 let targetZoom = 1; // or whatever your initial zoom is
 
+// Add this constant at the top with other constants
+const AIRCRAFT_BASE_SCALE = 0.00015; // Standard scale factor for aircraft
+
 document.addEventListener('DOMContentLoaded', (event) => {
     let gameHeight;
     try {
@@ -510,13 +513,13 @@ document.addEventListener('DOMContentLoaded', (event) => {
                 scene.cameras.main.zoom *= 1.1;
             }
             let newZoom = scene.cameras.main.zoom;
-            let scaleFactor = oldZoom / newZoom;
-            scene.children.list.forEach(child => {
-                if (child.type === 'Sprite') {
-                    child.setScale(child.scaleX * scaleFactor);
-                }
+            
+            // Update aircraft scales based on new zoom
+            aircrafts.forEach(aircraft => {
+                let newScale = scene.cameras.main.height * AIRCRAFT_BASE_SCALE / newZoom;
+                aircraft.setScale(newScale);
             });
-        
+            
             Utils.updateGraphics(scene, graphics, centerX, centerY, baseCircleRadius, smallCircleRadius, initialZoom, single);
         });  
 
@@ -563,8 +566,7 @@ document.addEventListener('DOMContentLoaded', (event) => {
             });
             if (!hitSprite && spawnButtonClicked) {
                 var aircraft = scene.physics.add.sprite(worldPoint.x, worldPoint.y, 'aircraft');
-                let currentZoom = scene.cameras.main.zoom;
-                let scale = scene.cameras.main.height * 0.0002 / currentZoom;
+                let scale = scene.cameras.main.height * AIRCRAFT_BASE_SCALE / scene.cameras.main.zoom;
                 Utils.createNewAircraft(scene, aircraft, scale, centerX, centerY, true, host);
                 aircrafts.push(aircraft);
                 broadcastAircraftState();
@@ -863,7 +865,7 @@ document.addEventListener('DOMContentLoaded', (event) => {
                 console.log(endSession);
                 if (!endSession) {
                     let newAircraft = this.physics.add.sprite(centerX, runwayMap[runway], 'aircraft');
-                    let scale = this.cameras.main.height * 0.0002 / this.cameras.main.zoom;
+                    let scale = this.cameras.main.height * AIRCRAFT_BASE_SCALE / this.cameras.main.zoom;
                     Utils.createNewAircraft(this, newAircraft, scale, centerX, centerY, false);
                     aircrafts.push(newAircraft);
                     broadcastAircraftState();
@@ -1005,7 +1007,8 @@ document.addEventListener('DOMContentLoaded', (event) => {
             let aircraft = aircrafts.find(a => a.id === s.id);
             if (!aircraft) {
                 aircraft = this.physics.add.sprite(s.x, s.y, 'aircraft');
-                aircraft.setScale((this.cameras.main.height * 0.0002) / this.cameras.main.zoom);
+                let scale = this.cameras.main.height * AIRCRAFT_BASE_SCALE / this.cameras.main.zoom;
+                aircraft.setScale(scale);
                 aircraft.id = s.id;
                 aircraft.label = this.add.text(s.x, s.y - 30, '', {
                     fontFamily: 'Arial',
