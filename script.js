@@ -2,6 +2,33 @@ var host = false;
 //  logic
 window.socket = new WebSocket('ws://localhost:3000');
 
+window.broadcastAircraftState = function() {
+    if (!window.socket || window.socket.readyState !== WebSocket.OPEN) return;
+    const state = aircrafts.map(a => ({
+        id: a.id || (a.id = Math.random().toString(36).substr(2, 9)),
+        x: a.x,
+        y: a.y,
+        angle: a.angle,
+        altitude: a.altitude,
+        airspeed: a.airspeed,
+        targetAltitude: a.targetAltitude,
+        targetHeading: a.targetHeading,
+        targetSpeed: a.targetSpeed,
+        isCleared: a.isCleared,
+        isEstablished: a.isEstablished,
+        handedOff: a.handedOff,
+        approach: a.approach,
+        runway: a.runway,
+        startedDescent: a.startedDescent,
+        lookForAirport: a.lookForAirport,
+        hasInSight: a.hasInSight,
+        texture: a.texture?.key || 'aircraft',
+        labelVisible: a.labelVisible
+    }));
+    
+    window.socket.send(JSON.stringify({ type: 'game_state', state }));
+}
+
 window.socket.addEventListener('message', (event) => {
     const msg = JSON.parse(event.data);
 
@@ -10,11 +37,11 @@ window.socket.addEventListener('message', (event) => {
     } else if (msg.type === 'session_joined') {
         Utils.displaySessionCode(msg.sessionCode);
     } else if (msg.type === 'game_state') {
-        applyRemoteAircraftState?.(msg.state); // Optional sync logic
+        applyRemoteAircraftState?.(window.scene, msg.state); // Optional sync logic
     } else if (msg.type === 'error') {
         alert(msg.message);
     } else if (msg.type === 'peer_joined') {
-        broadcastAircraftState(); // Send state to new client
+        window.broadcastAircraftState(); // Send state to new client
     }
 });
 document.getElementById('share').addEventListener('click', () => {
@@ -135,6 +162,7 @@ document.addEventListener('DOMContentLoaded', (event) => {
     function create() {
         single = window.location.href.includes('single');
         var scene = this;
+        window.scene = scene;
         var centerX = scene.cameras.main.worldView.x + scene.cameras.main.width / 2;
         var centerY = scene.cameras.main.worldView.y + scene.cameras.main.height / 2;
         runwayMap = {
@@ -511,15 +539,7 @@ document.addEventListener('DOMContentLoaded', (event) => {
                 scene.cameras.main.zoom *= 0.9;
             } else {
                 scene.cameras.main.zoom *= 1.1;
-            }
-            let newZoom = scene.cameras.main.zoom;
-            
-            // Update aircraft scales based on new zoom
-            aircrafts.forEach(aircraft => {
-                let newScale = scene.cameras.main.height * AIRCRAFT_BASE_SCALE / newZoom;
-                aircraft.setScale(newScale);
-            });
-            
+            }            
             Utils.updateGraphics(scene, graphics, centerX, centerY, baseCircleRadius, smallCircleRadius, initialZoom, single);
         });  
 
@@ -717,6 +737,8 @@ document.addEventListener('DOMContentLoaded', (event) => {
             planeCircle.strokeCircle(selectedAircraft.x, selectedAircraft.y, selectedAircraft.displayWidth / 4);
         }
         aircrafts.forEach(aircraft => {
+            let zoom = this.cameras.main.zoom;
+            aircraft.setScale(1 / (zoom * 7));  // Inverse scaling keeps size consistent on screen
             if (aircraft.body && aircraft.body.velocity) {
                 const velocityX = aircraft.body.velocity.x;
                 const velocityY = aircraft.body.velocity.y;
@@ -754,8 +776,6 @@ document.addEventListener('DOMContentLoaded', (event) => {
                 aircraft.labelVisible = true;
                 
                 // Scale label based on camera zoom
-                let zoom = this.cameras.main.zoom;
-                let baseZoom = 1.0;
                 aircraft.label.setScale(1 / zoom);  // Inverse scaling keeps size consistent on screen
             }
             if (aircraft.targetAltitude !== undefined && aircraft.altitude !== aircraft.targetAltitude) {
@@ -975,42 +995,15 @@ document.addEventListener('DOMContentLoaded', (event) => {
         this.cameras.main.setZoom(zoom);
     }
 
-    function broadcastAircraftState() {
-        if (!window.socket || window.socket.readyState !== WebSocket.OPEN) return;
-        const state = aircrafts.map(a => ({
-            id: a.id || (a.id = Math.random().toString(36).substr(2, 9)),
-            x: a.x,
-            y: a.y,
-            angle: a.angle,
-            altitude: a.altitude,
-            airspeed: a.airspeed,
-            targetAltitude: a.targetAltitude,
-            targetHeading: a.targetHeading,
-            targetSpeed: a.targetSpeed,
-            isCleared: a.isCleared,
-            isEstablished: a.isEstablished,
-            handedOff: a.handedOff,
-            approach: a.approach,
-            runway: a.runway,
-            startedDescent: a.startedDescent,
-            lookForAirport: a.lookForAirport,
-            hasInSight: a.hasInSight,
-            texture: a.texture?.key || 'aircraft',
-            labelVisible: a.labelVisible
-        }));
-        
-        window.socket.send(JSON.stringify({ type: 'game_state', state }));
-    }
-
-    window.applyRemoteAircraftState = function applyRemoteAircraftState(remoteState) {
+    window.applyRemoteAircraftState = function applyRemoteAircraftState(scene, remoteState) {
         for (const s of remoteState) {
             let aircraft = aircrafts.find(a => a.id === s.id);
             if (!aircraft) {
-                aircraft = this.physics.add.sprite(s.x, s.y, 'aircraft');
-                let scale = this.cameras.main.height * AIRCRAFT_BASE_SCALE / this.cameras.main.zoom;
+                aircraft = scene.physics.add.sprite(s.x, s.y, 'aircraft');
+                let scale = scene.cameras.main.height * AIRCRAFT_BASE_SCALE / scene.cameras.main.zoom;
                 aircraft.setScale(scale);
                 aircraft.id = s.id;
-                aircraft.label = this.add.text(s.x, s.y - 30, '', {
+                aircraft.label = scene.add.text(s.x, s.y - 30, '', {
                     fontFamily: 'Arial',
                     fontSize: '14px',
                     fill: '#ffffff'
@@ -1031,7 +1024,7 @@ document.addEventListener('DOMContentLoaded', (event) => {
             aircraft.handedOff = s.handedOff;
             if (s.labelVisible) {
                 if (!aircraft.label) {
-                    aircraft.label = this.add.text(aircraft.x, aircraft.y - 30, s.labelText, {
+                    aircraft.label = scene.add.text(aircraft.x, aircraft.y - 30, s.labelText, {
                         fontFamily: 'Arial',
                         fontSize: '14px',
                         fill: '#ffffff'
