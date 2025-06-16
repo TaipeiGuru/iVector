@@ -120,6 +120,7 @@ var velocityLines;
 let isPinching = false;
 let pinchFocal = { x: null, y: null };
 let targetZoom = 1; // or whatever your initial zoom is
+let headingText = null;
 
 // Add this constant at the top with other constants
 const AIRCRAFT_BASE_SCALE = 0.00015; // Standard scale factor for aircraft
@@ -181,7 +182,7 @@ document.addEventListener('DOMContentLoaded', (event) => {
         lineGraphics = scene.add.graphics();
         velocityLines = scene.add.graphics();
 
-        var headingText = scene.add.text(0, 0, '', {
+        headingText = scene.add.text(0, 0, '', {
             font: '16px Arial',
             fill: '#DD8AE6',
             backgroundColor: '#1b1b1b',
@@ -975,6 +976,7 @@ document.addEventListener('DOMContentLoaded', (event) => {
             }
         });
         let zoom = this.cameras.main.zoom;
+        headingText.setScale(1 / zoom);
         if (confirmMenu.visible) confirmMenu.setScale(1 / zoom);
         if (altitudeMenu.visible) altitudeMenu.setScale(1 / zoom);   
         if (generalMenu.visible) generalMenu.setScale(1 / zoom);
