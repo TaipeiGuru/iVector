@@ -172,17 +172,12 @@ window.Utils = {
     },
     displaySessionCode: function(code) {
         const shareBtn = document.getElementById('share');
-        const sessionBtn = document.getElementById('sessionCodeBtn');
-    
-        if (shareBtn) shareBtn.style.display = 'none';
-        if (sessionBtn) {
-            sessionBtn.style.display = 'inline-block';
-            sessionBtn.textContent = code;
-            sessionBtn.disabled = true;
-            sessionBtn.style.backgroundColor = 'white';
-            sessionBtn.style.color = 'black';
-            sessionBtn.style.border = 'none';
-            sessionBtn.style.cursor = 'default';
+        if (shareBtn) {
+            shareBtn.textContent = code;
+            shareBtn.style.backgroundColor = 'white';
+            shareBtn.style.color = 'black';
+            shareBtn.style.border = 'none';
+            shareBtn.style.cursor = 'default';
         }
     }
 };

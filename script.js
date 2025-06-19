@@ -46,7 +46,7 @@ window.socket.addEventListener('message', (event) => {
 });
 document.getElementById('share').addEventListener('click', () => {
     const shareBtn = document.getElementById('share');
-    shareBtn.style.display = 'none';
+    shareBtn.disabled = true;
     window.socket.send(JSON.stringify({ type: 'create_session' }));
 });
 const urlParams = new URLSearchParams(window.location.search);
@@ -59,10 +59,7 @@ if (!sessionCode) {
 
 if (sessionCode) {
     const shareBtn = document.getElementById('share');
-    if (shareBtn) {
-        shareBtn.disabled = true;
-        shareBtn.classList.add('session-active'); 
-    }
+    if (shareBtn) shareBtn.classList.add('session-active'); 
 }
 const waitForSocket = setInterval(() => {
     if (window.socket && window.socket.readyState === WebSocket.OPEN && sessionCode) {
@@ -408,7 +405,6 @@ document.addEventListener('DOMContentLoaded', (event) => {
                 const pointer = scene.input.activePointer.positionToCamera(scene.cameras.main);
                 maintainSpeedActionMenu.setPosition(worldCenter.x, worldCenter.y);
                 maintainSpeedActionMenu.setVisible(true);
-                selectedAircraft = null;
                 event.stopPropagation();
             });
 
@@ -447,7 +443,7 @@ document.addEventListener('DOMContentLoaded', (event) => {
                         selectedAircraft.targetSpeed = pendingSpeed;
                     }
                 }
-
+                selectedAircraft = null;
                 pendingSpeed = null;
             });
 
