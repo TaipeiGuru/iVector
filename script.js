@@ -95,12 +95,15 @@ var endSession = false;
 var expectApproachMenu;
 var expectVectorsMenu;
 var generalMenu;
+let headingText = null;
+let isPinching = false;
 var lineGraphics;
 var maintainSpeedMenu;
 var maintainSpeedActionMenu;
 var mouseCircle;
 var mouseDown = false;
 var pendingRunway = null;
+let pinchFocal = { x: null, y: null };
 var planeCircle;
 var pointerDownX = 0;
 var pointerDownY = 0;
@@ -112,12 +115,9 @@ var single;
 var selectedAircraft = null;
 var speedMenu;
 var suppressConfirmMenu = false;
+let targetZoom = 1; 
 var timeSinceLastBroadcast = 0;
 var velocityLines;
-let isPinching = false;
-let pinchFocal = { x: null, y: null };
-let targetZoom = 1; // or whatever your initial zoom is
-let headingText = null;
 
 // Add this constant at the top with other constants
 const AIRCRAFT_BASE_SCALE = 0.00015; // Standard scale factor for aircraft
@@ -165,8 +165,8 @@ document.addEventListener('DOMContentLoaded', (event) => {
         var centerY = scene.cameras.main.worldView.y + scene.cameras.main.height / 2;
         runwayMap = {
             "27": centerY,
-            "27L": centerY - 5,
-            "27R": centerY + 5
+            "27L": centerY + 5,
+            "27R": centerY - 5
         }
         window.AIRPORT_X = centerX;
         window.AIRPORT_Y = centerY;
@@ -376,6 +376,7 @@ document.addEventListener('DOMContentLoaded', (event) => {
                 approachSpeedMenu.setVisible(false);
                 if (selectedAircraft) {
                     selectedAircraft.targetSpeed = option.speed;
+                    Utils.adjustMovement(selectedAircraft);
                 }
                 event.stopPropagation();
                 selectedAircraft = null;
@@ -443,6 +444,7 @@ document.addEventListener('DOMContentLoaded', (event) => {
                         selectedAircraft.targetSpeed = pendingSpeed;
                     }
                 }
+                Utils.adjustMovement(selectedAircraft);
                 selectedAircraft = null;
                 pendingSpeed = null;
             });
@@ -597,12 +599,19 @@ document.addEventListener('DOMContentLoaded', (event) => {
 
         this.input.on('pointermove', (pointer) => {
             if (mouseDown && selectedAircraft != null) {
-                if (!dragged) {
-                    dragged = true;
-                }
-                result = Utils.redraw(dragged, scene, selectedAircraft, lineGraphics, mouseCircle, headingText);
-                if (result.success && result.heading) {
-                    assignedHeading = result.heading;
+                // Calculate distance moved
+                let dx = pointer.x - pointerDownX;
+                let dy = pointer.y - pointerDownY;
+                let distance = Math.sqrt(dx * dx + dy * dy);
+                
+                if (distance > 5) {
+                    if (!dragged) {
+                        dragged = true;
+                    }
+                    result = Utils.redraw(dragged, scene, selectedAircraft, lineGraphics, mouseCircle, headingText);
+                    if (result.success && result.heading) {
+                        assignedHeading = result.heading;
+                    }
                 }
             } else if (this.isDragging) {
                 let zoom = scene.cameras.main.zoom;
@@ -982,6 +991,7 @@ document.addEventListener('DOMContentLoaded', (event) => {
         if (maintainSpeedActionMenu.visible) maintainSpeedActionMenu.setScale(1 / zoom);
         if (runwayMenu.visible) runwayMenu.setScale(1 / zoom);  
         if (expectApproachMenu.visible) expectApproachMenu.setScale(1 / zoom);
+        if (expectVectorsMenu.visible) expectVectorsMenu.setScale(1 / zoom);
 
         // Smooth zoom transition
         const LERP_SPEED = 0.15; // 0.1-0.3 is a good range for smoothness
