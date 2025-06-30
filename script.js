@@ -631,16 +631,9 @@ document.addEventListener('DOMContentLoaded', (event) => {
             this.isDragging = false;
             mouseDown = false;
 
-            let anyMenuVisible = 
-            altitudeMenu.visible || 
-            generalMenu.visible || 
-            contactMenu.visible || 
-            speedMenu.visible || 
-            approachSpeedMenu.visible || 
-            maintainSpeedMenu.visible || 
-            maintainSpeedActionMenu.visible || 
-            runwayMenu.visible || 
-            expectApproachMenu.visible;
+            let anyMenuVisible = altitudeMenu.visible || generalMenu.visible || contactMenu.visible || 
+            speedMenu.visible ||approachSpeedMenu.visible || maintainSpeedMenu.visible || maintainSpeedActionMenu.visible
+            || runwayMenu.visible || expectApproachMenu.visible || expectVectorsMenu.visible;
         
             if (selectedAircraft != null && !suppressConfirmMenu && !anyMenuVisible) {
                 var worldPoint = scene.input.activePointer.positionToCamera(scene.cameras.main);
@@ -664,7 +657,9 @@ document.addEventListener('DOMContentLoaded', (event) => {
                     suppressConfirmMenu = true;
                 }
             }
-            suppressConfirmMenu = Utils.menuVisible(pointer, scene, altitudeMenu, generalMenu, contactMenu, speedMenu, approachSpeedMenu, maintainSpeedMenu, maintainSpeedActionMenu, runwayMenu, expectApproachMenu);
+            suppressConfirmMenu = Utils.menuVisible(pointer, scene, altitudeMenu, 
+                generalMenu, contactMenu, speedMenu, approachSpeedMenu, maintainSpeedMenu, 
+                maintainSpeedActionMenu, runwayMenu, expectApproachMenu, expectVectorsMenu);
             if (suppressConfirmMenu) pendingSpeed = null;
         });
 
@@ -949,23 +944,9 @@ document.addEventListener('DOMContentLoaded', (event) => {
                 const nmDistance = (pixelDistance / 300) * 11;
                 const verticalSep = Math.abs(aircraft.altitude - a2.altitude);
                 if (nmDistance < 3 && verticalSep < 1000) {
-                    // aircraft is not cleared
-                    if (!aircraft.isCleared || (aircraft.approach == "ILS" && !aircraft.isEstablished)) {
-                        bust = true;
-                    } else {
-                        // other aircraft is not cleared and other aircraft is ILS and not established
-                        if (a2.approach == "ILS" && !a2.isEstablished) {
-                            bust = true
-                        }
-                        // other aircraft is not cleared and is VIS and is not cleared
-                        if (a2.approach == "VIS" && !a2.isCleared) {
-                            bust = true
-                        }
-                        // other aircraft is RV and is not cleared
-                        if (a2.approach == "RV" && !a2.isCleared) {
-                            bust = true
-                        }
-                    }
+                    // Check if either aircraft is in violation
+                    const isViolation = ac => ac.approach === "ILS" ? !ac.isEstablished : !ac.isCleared;
+                    if (isViolation(aircraft) || isViolation(a2)) bust = true;
                 }
             }
             if (bust) {

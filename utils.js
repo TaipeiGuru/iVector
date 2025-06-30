@@ -95,7 +95,7 @@ window.Utils = {
         aircraft.targetHeading = aircraft.angle;
         this.adjustMovement(aircraft);
     },
-    menuVisible: function(pointer, scene, altitudeMenu, generalMenu, contactMenu, speedMenu, approachSpeedMenu, maintainSpeedMenu, maintainSpeedActionMenu, runwayMenu, expectApproachMenu) {
+    menuVisible: function(pointer, scene, altitudeMenu, generalMenu, contactMenu, speedMenu, approachSpeedMenu, maintainSpeedMenu, maintainSpeedActionMenu, runwayMenu, expectApproachMenu, expectVectorsMenu) {
         const camera = scene.cameras.main;
         const worldX = camera.getWorldPoint(pointer.x, pointer.y).x;
         const worldY = camera.getWorldPoint(pointer.x, pointer.y).y;
@@ -135,6 +135,10 @@ window.Utils = {
             expectApproachMenu.setVisible(false);
             return true;
         }
+        if (expectVectorsMenu.visible && this.checkBounds(worldX, worldY, expectVectorsMenu.getBounds())) {
+            expectVectorsMenu.setVisible(false);
+            return true;
+        }
         return false;
     },
     redraw: function(dragged, scene, selectedAircraft, lineGraphics, mouseCircle, headingText) {
@@ -159,6 +163,7 @@ window.Utils = {
         var angleDeg = Phaser.Math.RadToDeg(angleRad);
         if (angleDeg < 0) angleDeg += 360;
         var heading = Math.round(angleDeg / 10) * 10;
+        if (heading === 0) heading = 360;
 
         const deltaX = worldPoint.x - selectedAircraft.x;
         const deltaY = worldPoint.y - selectedAircraft.y;
