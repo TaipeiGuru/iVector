@@ -119,6 +119,8 @@ let targetZoom = 1;
 var timeSinceLastBroadcast = 0;
 var velocityLines;
 
+let currentTerrainMap = "coastal";
+
 // Add this constant at the top with other constants
 const AIRCRAFT_BASE_SCALE = 0.00015; // Standard scale factor for aircraft
 
@@ -168,6 +170,10 @@ document.addEventListener('DOMContentLoaded', (event) => {
             "27L": centerY + 5,
             "27R": centerY - 5
         }
+        // TERRAIN
+        window.terrainGraphics = TERRAIN.createTerrainVisualization(scene);
+        // TERRAIN
+
         window.AIRPORT_X = centerX;
         window.AIRPORT_Y = centerY;
         var baseCircleRadius = scene.cameras.main.height * 0.015;
