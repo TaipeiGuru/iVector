@@ -170,9 +170,7 @@ document.addEventListener('DOMContentLoaded', (event) => {
             "27L": centerY + 5,
             "27R": centerY - 5
         }
-        // TERRAIN
         window.terrainGraphics = TERRAIN.createTerrainVisualization(scene);
-        // TERRAIN
 
         window.AIRPORT_X = centerX;
         window.AIRPORT_Y = centerY;
