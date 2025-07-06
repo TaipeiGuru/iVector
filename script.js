@@ -85,6 +85,7 @@ function toggleStart() {
 }
 
 var aircrafts = [];
+var altitudeDisplayText = null;
 var altitudeMenu;
 var approachSpeedMenu;
 var assignedHeading = null;
@@ -118,7 +119,6 @@ var suppressConfirmMenu = false;
 let targetZoom = 1; 
 var timeSinceLastBroadcast = 0;
 var velocityLines;
-
 let currentTerrainMap = "medium";
 
 // Add this constant at the top with other constants
@@ -186,6 +186,13 @@ document.addEventListener('DOMContentLoaded', (event) => {
         headingText = scene.add.text(0, 0, '', {
             font: '16px Arial',
             fill: '#DD8AE6',
+            backgroundColor: '#1b1b1b',
+            padding: { x: 5, y: 2 }
+        }).setDepth(1).setVisible(false);
+
+        altitudeDisplayText = scene.add.text(0, 0, '', {
+            font: '16px Arial',
+            fill: '#FFD700', // Gold color for altitude display
             backgroundColor: '#1b1b1b',
             padding: { x: 5, y: 2 }
         }).setDepth(1).setVisible(false);
@@ -594,6 +601,27 @@ document.addEventListener('DOMContentLoaded', (event) => {
                 aircrafts.push(aircraft);
                 broadcastAircraftState();
             } else if (!spawnButtonClicked && !hitSprite) {
+                const currentMap = TERRAIN_MAPS[currentTerrainMap];
+                let minAltitude = null;
+                
+                for (const zone of currentMap.zones) {
+                    console.log(worldPoint);
+                    if (TERRAIN.isPointInPolygon(worldPoint, zone.points)) {
+                        minAltitude = zone.minAltitude;
+                        break;
+                    }
+                }
+                
+                if (minAltitude !== null) {
+                    const altitudeText = `${Math.round(minAltitude/100)}00ft`;
+                    altitudeDisplayText.setText(altitudeText);
+                    altitudeDisplayText.setPosition(worldPoint.x + 10, worldPoint.y - 10);
+                    altitudeDisplayText.setVisible(true);
+                    
+                    setTimeout(() => {
+                        altitudeDisplayText.setVisible(false);
+                    }, 3000);
+                }
                 scene.isDragging = true;
                 let zoom = scene.cameras.main.zoom;
                 scene.dragStart.x = (pointer.x / zoom) + scene.cameras.main.scrollX;
