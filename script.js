@@ -119,7 +119,7 @@ let targetZoom = 1;
 var timeSinceLastBroadcast = 0;
 var velocityLines;
 
-let currentTerrainMap = "coastal";
+let currentTerrainMap = "medium";
 
 // Add this constant at the top with other constants
 const AIRCRAFT_BASE_SCALE = 0.00015; // Standard scale factor for aircraft

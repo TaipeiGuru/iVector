@@ -1,5 +1,5 @@
 const TERRAIN_MAPS = {
-    "coastal": {
+    "hard": {
         name: "Coastal Region",
         zones: [
             {
@@ -90,13 +90,50 @@ const TERRAIN_MAPS = {
                 color: 0xD2EB59, // Light green
             }
         ]
+    },
+    "medium": {
+        name: "Coastal Region",
+        zones: [
+            {
+                name: "test terrain",
+                points: [
+                    {x:590, y:855}, {x:570, y:830}, {x:575, y:790}, {x:600, y:750}, 
+                    {x:650, y:690}, {x:700, y:680}, {x:775, y:680}, {x:900, y:700}, 
+                    {x:950, y:690}, {x:1000, y:670}, {x:1050, y:675}, {x:1100, y:670}, 
+                    {x:1150, y:660}, {x:1300, y:660}, {x:1320, y:670}, {x:1330, y:690}, 
+                    {x:1365, y:730}, {x:1400, y:750}, {x:1440, y:765}, {x:1442, y:780}, 
+                    {x:1450, y:792}, {x:1460, y:800}, {x:1455, y:820}, {x:1440, y:835}, 
+                    {x:1400, y:850}, {x:1300, y:870}, {x:1250, y:870}, {x:1200, y:880}, 
+                    {x:1150, y:890}, {x:1100, y:885}, {x:1075, y:872}, {x:1050, y:865},
+                    {x:1000, y:870}, {x:950, y:880}, {x:900, y:900}, {x:850, y:905}, 
+                    {x:800, y:895}, {x:750, y:895}, {x:725, y:880}, {x:700, y:850}, 
+                    {x:690, y:830}, {x:685, y:825}, {x:680, y:825}, {x:670, y:835}, 
+                    {x:660, y:850}, {x:640, y:865}, {x:615, y:865}
+                ],
+                minAltitude: 6000,
+                color: 0x9EB271, // Dark olive green
+            },
+            {
+                name: "test terrain",
+                points: [
+                    {x:600, y:810}, {x:670, y:720}, {x:1300, y:720}, {x:1320, y:745}, 
+                    {x:1355, y:770}, {x:1390, y:775}, {x:1400, y:780}, {x:1410, y:790}, 
+                    {x:1410, y:805}, {x:1400, y:820}, {x:1250, y:850}, {x:1175, y:860}, 
+                    {x:1140, y:855}, {x:1100, y:840}, {x:1000, y:835}, {x:900, y:870}, {x:825, y:875}, {x:680, y:790}
+
+                ],
+                minAltitude: 6000,
+                color: 0xFFFFFF, // Dark olive green
+            }
+        ]
     }
+
 };
 
 window.TERRAIN = {
     createTerrainVisualization: function(scene) {
         const terrainGraphics = scene.add.graphics();
-        const currentMap = TERRAIN_MAPS["coastal"];
+        const currentMap = TERRAIN_MAPS["medium"];
         
         // Clear previous terrain
         terrainGraphics.clear();
@@ -118,17 +155,16 @@ window.TERRAIN = {
         });
         
         return terrainGraphics;
+    },
+    isPointInPolygon: function(point, polygon) {
+        let inside = false;
+        for (let i = 0, j = polygon.length - 1; i < polygon.length; j = i++) {
+            if (((polygon[i].y > point.y) !== (polygon[j].y > point.y)) &&
+                (point.x < (polygon[j].x - polygon[i].x) * (point.y - polygon[i].y) / 
+                (polygon[j].y - polygon[i].y) + polygon[i].x)) {
+                inside = !inside;
+            }
+        }
+        return inside;
     }
 };
-
-function isPointInPolygon(point, polygon) {
-    let inside = false;
-    for (let i = 0, j = polygon.length - 1; i < polygon.length; j = i++) {
-        if (((polygon[i].y > point.y) !== (polygon[j].y > point.y)) &&
-            (point.x < (polygon[j].x - polygon[i].x) * (point.y - polygon[i].y) / 
-             (polygon[j].y - polygon[i].y) + polygon[i].x)) {
-            inside = !inside;
-        }
-    }
-    return inside;
-}
