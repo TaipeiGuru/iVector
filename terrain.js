@@ -309,10 +309,9 @@ const TERRAIN_MAPS = {
 };
 
 window.TERRAIN = {
-    createTerrainVisualization: function(scene) {
+    createTerrainVisualization: function(scene, map) {
         const terrainGraphics = scene.add.graphics();
-        const currentMap = TERRAIN_MAPS["medium"];
-        
+        const currentMap = TERRAIN_MAPS[map || "medium"];
         // Clear previous terrain
         terrainGraphics.clear();
         
@@ -346,5 +345,17 @@ window.TERRAIN = {
             }
         }
         return inside;
+    },
+    getTerrainAltitudeAtPoint: function(x, y, map) {
+        if (map === "none") return 0;
+        const currentMap = TERRAIN_MAPS[map];
+        let maxAltitude = 0; // Start with sea level
+        for (const zone of currentMap.zones) {
+            if (TERRAIN.isPointInPolygon({x, y}, zone.points)) {
+                maxAltitude = Math.max(maxAltitude, zone.minAltitude);
+            }
+        }
+        return maxAltitude;
     }
+    
 };

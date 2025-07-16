@@ -83,6 +83,25 @@ function toggleStart() {
     var button = document.getElementById('start');
     button.classList.toggle('active');
 }
+function toggleTerrain() {
+    var button = document.getElementById('terrain');
+    var dropdown = document.getElementById('terrainSelect');
+    terrainButtonClicked = !terrainButtonClicked;
+    button.classList.toggle('active');
+    dropdown.style.display = button.classList.contains('active') ? 'inline-block' : 'none';
+    if (terrainButtonClicked) {
+        var terrainMap = dropdown.value || "easy";
+        currentTerrainMap = terrainMap;
+        window.terrainGraphics = TERRAIN.createTerrainVisualization(scene, terrainMap);
+        button.style.backgroundColor = 'white';
+        button.style.color = 'black';
+    } else {
+        currentTerrainMap = "none";
+        window.terrainGraphics.destroy();
+        button.style.backgroundColor = '#090808';
+        button.style.color = '#6CB472';    
+    }
+}
 
 var aircrafts = [];
 var altitudeDisplayText = null;
@@ -117,9 +136,10 @@ var selectedAircraft = null;
 var speedMenu;
 var suppressConfirmMenu = false;
 let targetZoom = 1; 
+var terrainButtonClicked = false;
 var timeSinceLastBroadcast = 0;
 var velocityLines;
-let currentTerrainMap = "medium";
+let currentTerrainMap = "none";
 
 // Add this constant at the top with other constants
 const AIRCRAFT_BASE_SCALE = 0.00015; // Standard scale factor for aircraft
@@ -170,7 +190,6 @@ document.addEventListener('DOMContentLoaded', (event) => {
             "27L": centerY + 5,
             "27R": centerY - 5
         }
-        window.terrainGraphics = TERRAIN.createTerrainVisualization(scene);
 
         window.AIRPORT_X = centerX;
         window.AIRPORT_Y = centerY;
@@ -575,6 +594,15 @@ document.addEventListener('DOMContentLoaded', (event) => {
                 button.style.color = 'black';
             }
         });
+        document.getElementById('terrainSelect').addEventListener('change', function() {
+            const selectedTerrain = this.value;
+            
+            // Update terrain visualization
+            if (window.terrainGraphics) {
+                window.terrainGraphics.destroy();
+            }
+            window.terrainGraphics = TERRAIN.createTerrainVisualization(scene, selectedTerrain);
+        });
 
         scene.isDragging = false;
         scene.dragStart = { x: 0, y: 0 };
@@ -967,6 +995,12 @@ document.addEventListener('DOMContentLoaded', (event) => {
                 }
             }
             let bust = false;
+            if (currentTerrainMap !== "none") {
+                let terrainAltitude = TERRAIN.getTerrainAltitudeAtPoint(aircraft.x, aircraft.y, currentTerrainMap);
+                if (aircraft.altitude < terrainAltitude + 1000) {
+                    bust = true;
+                }
+            }
             for (let j = 0; j < aircrafts.length; j++) {
                 const a2 = aircrafts[j];
                 if (a2 === aircraft) continue; 
@@ -1015,6 +1049,7 @@ document.addEventListener('DOMContentLoaded', (event) => {
         }
         this.cameras.main.setZoom(zoom);
     }
+    
 
     window.applyRemoteAircraftState = function applyRemoteAircraftState(scene, remoteState) {
         for (const s of remoteState) {
