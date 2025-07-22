@@ -3,12 +3,19 @@ const express = require('express');
 const { WebSocketServer } = require('ws');
 const { v4: uuidv4 } = require('uuid');
 const http = require('http');
+const path = require('path'); // Add this line
 
 const app = express();
 const server = http.createServer(app);
 const wss = new WebSocketServer({ server });
 
 const sessions = {}; // sessionCode => [WebSocket]
+
+// --- NEW: Serve static files from the 'public' directory ---
+app.use(express.static(path.join(__dirname, 'public'))); 
+// If 'server.js' is at the root, and 'public' is at the root, use path.join(__dirname, 'public')
+// If 'server.js' is in a 'server/' folder and 'public/' is at the root, you'd use path.join(__dirname, '../public')
+// Based on your current file list, assuming server.js is at the root level, and you create a 'public' folder at the root.
 
 wss.on('connection', (ws) => {
     ws.on('message', (data) => {
@@ -31,7 +38,7 @@ wss.on('connection', (ws) => {
                         if (client !== ws) {
                             client.send(JSON.stringify({ type: 'peer_joined' }));
                         }
-                    });                    
+                    });
                 } else {
                     ws.send(JSON.stringify({ type: 'error', message: 'Invalid session code' }));
                 }
@@ -59,6 +66,24 @@ wss.on('connection', (ws) => {
     });
 });
 
-server.listen(3000, () => {
-    console.log('WebSocket server listening on port 3000');
+// --- MODIFIED: Listen on Render's dynamic PORT ---
+const PORT = process.env.PORT || 3000; // Render sets the PORT env variable
+server.listen(PORT, () => {
+    console.log(`Server listening on port ${PORT}`);
+});
+
+// --- NEW: Basic Health Check Endpoint (Recommended for Render Web Services) ---
+app.get('/healthz', (req, res) => {
+    res.status(200).send('OK');
+});
+
+// --- Optional: Graceful Shutdown ---
+process.on('SIGTERM', () => {
+    console.log('SIGTERM received. Shutting down gracefully...');
+    server.close(() => {
+        console.log('HTTP server closed.');
+        wss.clients.forEach(ws => ws.close(1001, 'Server going down')); // 1001: Going Away
+        console.log('WebSocket clients disconnected.');
+        process.exit(0);
+    });
 });

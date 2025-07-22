@@ -1,6 +1,6 @@
 var host = false;
-//  logic
-window.socket = new WebSocket('ws://localhost:3000');
+const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
+window.socket = new WebSocket(`${protocol}//${window.location.host}`);
 
 window.broadcastAircraftState = function() {
     if (!window.socket || window.socket.readyState !== WebSocket.OPEN) return;

@@ -1,4 +1,11 @@
 {
+  "name": "iVector",
+  "version": "1.0.0",
+  "description": "Multiplayer ATC Simulator",
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js" 
+  },
   "dependencies": {
     "express": "^5.1.0",
     "phaser3-rex-plugins": "^1.80.16",

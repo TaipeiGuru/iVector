@@ -1,0 +1,104 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>îVector</title>
+    <link rel="icon" type="image/x-icon" href="/assets/favicon.png">
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <div class="navbar">
+        <h1 id="website">îVector</h1>
+    </div>
+    <div class="home-container">
+        <div class="instructions-module">
+            <h2>How to Use îVector</h2>
+            <ol>
+                <li><strong class="header">Getting Started:</strong> Choose between <b>Single Runway</b> or <b>Parallels</b>. To start a session, click <b>Start Session</b>.
+                    <br> To join a session, click <b>Join Session</b> and enter the session code provided by the host.</li>
+                <li><strong class="header">Spawning Aircraft:</strong> Click “Spawn Pilot” and ensure the desired approach type is selected in the dropdown 
+                    <br>menu. The aircraft’s approach type will be shown in their tag. Note that <strong>trainees should still assign 
+                    <br> approaches to each aircraft</strong>; some functionalities (such as ILS intercepts) will not work if an aircraft 
+                    <br> has not been explicitly assigned an approach. An <strong>approach is assigned if a runway is shown in the
+                    <br>aircraft’s tag.</strong></li>
+                <li><strong class="header">Setting Terrain:</strong>Click the terrain button to activate terrain. Use the dropdown to select the terrain difficulty.
+                    <br> Note: tapping on terrain will show its MSA.</li>
+                <li><strong class="header">Color Codes:</strong> Aircraft may turn different colors depending on their circumstances.</li>
+                <ul>
+                    <li><strong>Light blue:</strong> normal aircraft</li>
+                    <li><strong>Lime green:</strong> aircraft is visual and has the airport in sight</li>
+                    <li><strong>Red:</strong> aircraft has lost separation with terrain or another aircraft</li>
+                    <li><strong>Gray:</strong> aircraft has been handed off to tower/unicom/ATC</li>
+                </ul>
+                <li><strong class="header">Visual App. Notes:</strong> When an aircraft is asked to report airport in sight, it will do so by turning green. If
+                    <br> an aircraft is green, it has the airport in sight and can be cleared for the visual approach. Once cleared
+                    <br> for the visual and to the east of the airport, the aircraft will maintain its present heading/altitude/speed
+                    <br> until it intersects the localizer, at which point it will turn and join final. </li>
+                <li><strong class="header">RV Notes:</strong> Once handed off to tower, the aircraft will maintain its present heading/altitude/speed until it
+                    <br> intersects the localizer, at which point it will turn and join final.</li>
+                <li><strong class="header">Patterns:</strong> After performing a touch and go, aircraft will contact approach at SPD 200kts, HDG 270,
+                    <br> and ALT 500ft climbing to 3000ft. Note that approach types will <strong>not</strong> be kept - the trainee should assign
+                    <br> one themselves. To initiate “full stop,” click the <strong>End Session</strong> button at the top of the screen. If this is
+                    <br> active, aircraft will despawn upon landing. To reactivate touch and goes, select the <strong>End Session</strong>
+                    <br> button again so it doesn’t show as active.</li>
+                <li><strong class="header">Trainer Notes:</strong> Once joined, the trainer will see everything on the trainee’s screen. However, while able
+                    <br> to spawn aircraft, the trainer will not be able to interact with them.</li>
+                <li><strong class="header">Need Help?</strong> For issues, terrain requests, or other concerns, please contact @taipeiguru on Discord.</li>
+            </ol>
+        </div>
+        <div class="join-group">
+            <button id="singleBtn" class="start-btn">Single Runway</button>
+            <button id="parallelsBtn" class="start-btn">Parallel Runways</button>
+        </div>
+        <div class="join-group" style="margin-top: 1em;">
+            <button class="start-btn" id="joinSessionBtn" disabled>Join Session</button>
+            <button class="start-btn" id="startControlBtn" disabled>Start Session</button>
+        </div>
+    </div>
+
+    <script>
+        const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
+        const socket = new WebSocket(`${protocol}//${window.location.host}`);
+
+        const singleBtn = document.getElementById('singleBtn');
+        const parallelsBtn = document.getElementById('parallelsBtn');
+        const joinSessionBtn = document.getElementById('joinSessionBtn');
+        const startControlBtn = document.getElementById('startControlBtn');
+        let selectedMode = null;
+
+        function enableSessionButtons() {
+            joinSessionBtn.disabled = false;
+            startControlBtn.disabled = false;
+        }
+
+        singleBtn.addEventListener('click', () => {
+            selectedMode = 'single';
+            enableSessionButtons();
+            singleBtn.classList.add('selected');
+            parallelsBtn.classList.remove('selected');
+        });
+
+        parallelsBtn.addEventListener('click', () => {
+            selectedMode = 'parallels';
+            enableSessionButtons();
+            parallelsBtn.classList.add('selected');
+            singleBtn.classList.remove('selected');
+        });
+
+        joinSessionBtn.addEventListener('click', () => {
+            const code = prompt("Enter session code:");
+            if (code && selectedMode) {
+                const sessionCode = code.trim().toUpperCase();
+                window.location.href = `single.html?session=${sessionCode}`;
+            }
+        });
+
+        startControlBtn.addEventListener('click', function () {
+            if (!selectedMode) return;
+            const modePage = selectedMode === 'single' ? 'single.html' : 'parallels.html';
+            window.location.href = modePage;
+        });
+    </script>
+</body>
+</html>
