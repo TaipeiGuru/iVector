@@ -622,12 +622,8 @@ document.addEventListener('DOMContentLoaded', (event) => {
                 }
             });
             if (!hitSprite && spawnButtonClicked) {
-                // Always spawn at a fixed offset from the airport center
-                const SPAWN_OFFSET_X = 400; // adjust as needed
-                const SPAWN_OFFSET_Y = 0;   // adjust as needed
-                var spawnX = centerX + SPAWN_OFFSET_X;
-                var spawnY = centerY + SPAWN_OFFSET_Y;
-                var aircraft = scene.physics.add.sprite(spawnX, spawnY, 'aircraft');
+                console.log("Airport world coordinates:", centerX, centerY);
+                var aircraft = scene.physics.add.sprite(worldPoint.x, worldPoint.y, 'aircraft');
                 let scale = scene.cameras.main.height * AIRCRAFT_BASE_SCALE / scene.cameras.main.zoom;
                 Utils.createNewAircraft(scene, aircraft, scale, centerX, centerY, true, host);
                 aircrafts.push(aircraft);
