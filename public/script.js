@@ -597,7 +597,6 @@ document.addEventListener('DOMContentLoaded', (event) => {
         document.getElementById('terrainSelect').addEventListener('change', function() {
             const selectedTerrain = this.value;
             
-            // Update terrain visualization
             if (window.terrainGraphics) {
                 window.terrainGraphics.destroy();
             }
@@ -623,23 +622,27 @@ document.addEventListener('DOMContentLoaded', (event) => {
                 }
             });
             if (!hitSprite && spawnButtonClicked) {
-                var aircraft = scene.physics.add.sprite(worldPoint.x, worldPoint.y, 'aircraft');
+                // Always spawn at a fixed offset from the airport center
+                const SPAWN_OFFSET_X = 400; // adjust as needed
+                const SPAWN_OFFSET_Y = 0;   // adjust as needed
+                var spawnX = centerX + SPAWN_OFFSET_X;
+                var spawnY = centerY + SPAWN_OFFSET_Y;
+                var aircraft = scene.physics.add.sprite(spawnX, spawnY, 'aircraft');
                 let scale = scene.cameras.main.height * AIRCRAFT_BASE_SCALE / scene.cameras.main.zoom;
                 Utils.createNewAircraft(scene, aircraft, scale, centerX, centerY, true, host);
                 aircrafts.push(aircraft);
                 broadcastAircraftState();
-            } else if (!spawnButtonClicked && !hitSprite) {
-                const currentMap = TERRAIN_MAPS[currentTerrainMap];
+            }
+
+            const currentMap = TERRAIN_MAPS[currentTerrainMap];
+            if (currentTerrainMap !== "none" && currentMap) {
                 let minAltitude = null;
-                
                 for (const zone of currentMap.zones) {
-                    console.log(worldPoint);
                     if (TERRAIN.isPointInPolygon(worldPoint, zone.points)) {
                         minAltitude = zone.minAltitude;
                         break;
                     }
                 }
-                
                 if (minAltitude !== null) {
                     const altitudeText = `${Math.round(minAltitude/100)}00ft`;
                     altitudeDisplayText.setText(altitudeText);
@@ -650,16 +653,16 @@ document.addEventListener('DOMContentLoaded', (event) => {
                         altitudeDisplayText.setVisible(false);
                     }, 3000);
                 }
-                scene.isDragging = true;
-                let zoom = scene.cameras.main.zoom;
-                scene.dragStart.x = (pointer.x / zoom) + scene.cameras.main.scrollX;
-                scene.dragStart.y = (pointer.y / zoom) + scene.cameras.main.scrollY;
             }
+
+            scene.isDragging = true;
+            let zoom = scene.cameras.main.zoom;
+            scene.dragStart.x = (pointer.x / zoom) + scene.cameras.main.scrollX;
+            scene.dragStart.y = (pointer.y / zoom) + scene.cameras.main.scrollY;
         });
 
         this.input.on('pointermove', (pointer) => {
             if (mouseDown && selectedAircraft != null) {
-                // Calculate distance moved
                 let dx = pointer.x - pointerDownX;
                 let dy = pointer.y - pointerDownY;
                 let distance = Math.sqrt(dx * dx + dy * dy);
