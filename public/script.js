@@ -622,7 +622,17 @@ document.addEventListener('DOMContentLoaded', (event) => {
                 }
             });
             if (!hitSprite && spawnButtonClicked) {
-                console.log("Airport world coordinates:", centerX, centerY);
+                let airportCoordText = scene.add.text(centerX, centerY - 40, `(${Math.round(centerX)}, ${Math.round(centerY)})`, {
+                    font: '18px Arial',
+                    fill: '#FFD700',
+                    backgroundColor: '#222',
+                    padding: { x: 6, y: 3 }
+                }).setOrigin(0.5);
+            
+                // Remove the label after 2 seconds
+                scene.time.delayedCall(2000, () => {
+                    airportCoordText.destroy();
+                });
                 var aircraft = scene.physics.add.sprite(worldPoint.x, worldPoint.y, 'aircraft');
                 let scale = scene.cameras.main.height * AIRCRAFT_BASE_SCALE / scene.cameras.main.zoom;
                 Utils.createNewAircraft(scene, aircraft, scale, centerX, centerY, true, host);
