@@ -140,6 +140,8 @@ var terrainButtonClicked = false;
 var timeSinceLastBroadcast = 0;
 var velocityLines;
 let currentTerrainMap = "none";
+const AIRPORT_WORLD_X = 800;
+const AIRPORT_WORLD_Y = 400;
 
 // Add this constant at the top with other constants
 const AIRCRAFT_BASE_SCALE = 0.00015; // Standard scale factor for aircraft
@@ -183,16 +185,14 @@ document.addEventListener('DOMContentLoaded', (event) => {
         single = window.location.href.includes('single');
         var scene = this;
         window.scene = scene;
-        var centerX = scene.cameras.main.worldView.x + scene.cameras.main.width / 2;
-        var centerY = scene.cameras.main.worldView.y + scene.cameras.main.height / 2;
         runwayMap = {
-            "27": centerY,
-            "27L": centerY + 5,
-            "27R": centerY - 5
+            "27": AIRPORT_WORLD_Y,
+            "27L": AIRPORT_WORLD_Y + 5,
+            "27R": AIRPORT_WORLD_Y - 5
         }
-
-        window.AIRPORT_X = centerX;
-        window.AIRPORT_Y = centerY;
+        scene.cameras.main.centerOn(AIRPORT_WORLD_X, AIRPORT_WORLD_Y);
+        window.AIRPORT_X = AIRPORT_WORLD_X;
+        window.AIRPORT_Y = AIRPORT_WORLD_Y;
         var baseCircleRadius = scene.cameras.main.height * 0.015;
         var smallCircleRadius = scene.cameras.main.height * 0.009;
         var initialZoom = scene.cameras.main.zoom;
@@ -560,7 +560,7 @@ document.addEventListener('DOMContentLoaded', (event) => {
         runwayMenu.add([runwayBtn, runwayText]);
 
         scene.physics.world.setBounds(0, 0, window.innerWidth, Utils.calculateGameHeight());
-        Utils.updateGraphics(scene, graphics, centerX, centerY, baseCircleRadius, smallCircleRadius, initialZoom, single);
+        Utils.updateGraphics(scene, graphics, AIRPORT_X, AIRPORT_Y, baseCircleRadius, smallCircleRadius, initialZoom, single);
 
         this.input.on('wheel', (pointer, gameObjects, deltaX, deltaY, deltaZ) => {
             let oldZoom = scene.cameras.main.zoom;
@@ -569,7 +569,7 @@ document.addEventListener('DOMContentLoaded', (event) => {
             } else {
                 scene.cameras.main.zoom *= 1.1;
             }            
-            Utils.updateGraphics(scene, graphics, centerX, centerY, baseCircleRadius, smallCircleRadius, initialZoom, single);
+            Utils.updateGraphics(scene, graphics, AIRPORT_X, AIRPORT_Y, baseCircleRadius, smallCircleRadius, initialZoom, single);
         });  
 
         document.getElementById('spawn').addEventListener('click', function () {
@@ -622,7 +622,7 @@ document.addEventListener('DOMContentLoaded', (event) => {
                 }
             });
             if (!hitSprite && spawnButtonClicked) {
-                let airportCoordText = scene.add.text(centerX, centerY - 40, `(${Math.round(centerX)}, ${Math.round(centerY)})`, {
+                let airportCoordText = scene.add.text(AIRPORT_X, AIRPORT_Y - 40, `(${Math.round(AIRPORT_X)}, ${Math.round(AIRPORT_Y)})`, {
                     font: '18px Arial',
                     fill: '#FFD700',
                     backgroundColor: '#222',
@@ -635,7 +635,7 @@ document.addEventListener('DOMContentLoaded', (event) => {
                 });
                 var aircraft = scene.physics.add.sprite(worldPoint.x, worldPoint.y, 'aircraft');
                 let scale = scene.cameras.main.height * AIRCRAFT_BASE_SCALE / scene.cameras.main.zoom;
-                Utils.createNewAircraft(scene, aircraft, scale, centerX, centerY, true, host);
+                Utils.createNewAircraft(scene, aircraft, scale, AIRPORT_X, AIRPORT_Y, true, host);
                 aircrafts.push(aircraft);
                 broadcastAircraftState();
             }
@@ -1058,7 +1058,6 @@ document.addEventListener('DOMContentLoaded', (event) => {
         }
         this.cameras.main.setZoom(zoom);
     }
-    
 
     window.applyRemoteAircraftState = function applyRemoteAircraftState(scene, remoteState) {
         for (const s of remoteState) {
