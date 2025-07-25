@@ -52,6 +52,16 @@ wss.on('connection', (ws) => {
                     );
                 }
                 break;
+            case 'terrain_change':
+                const sessionClients = sessions[ws.sessionCode];
+                if (sessionClients) {
+                    sessionClients.forEach(client => {
+                        if (client !== ws && client.readyState === 1) { // 1 = OPEN
+                            client.send(JSON.stringify({ type: 'terrain_change', terrain: msg.terrain }));
+                        }
+                    });
+                }
+                break;
         }
     });
 

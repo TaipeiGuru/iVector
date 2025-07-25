@@ -42,6 +42,12 @@ window.socket.addEventListener('message', (event) => {
         alert(msg.message);
     } else if (msg.type === 'peer_joined') {
         window.broadcastAircraftState(); // Send state to new client
+    } else if (msg.type === 'terrain_change') {
+        if (msg.terrain == "none") {
+            window.terrainGraphics.destroy();
+        } else {
+            window.terrainGraphics = TERRAIN.createTerrainVisualization(window.scene, msg.terrain);
+        }
     }
 });
 document.getElementById('share').addEventListener('click', () => {
@@ -92,11 +98,17 @@ function toggleTerrain() {
     if (terrainButtonClicked) {
         var terrainMap = dropdown.value || "easy";
         currentTerrainMap = terrainMap;
+        if (window.socket && window.socket.readyState === WebSocket.OPEN) {
+            window.socket.send(JSON.stringify({ type: 'terrain_change', terrain: terrainMap }));
+        }
         window.terrainGraphics = TERRAIN.createTerrainVisualization(scene, terrainMap);
         button.style.backgroundColor = 'white';
         button.style.color = 'black';
     } else {
         currentTerrainMap = "none";
+        if (window.socket && window.socket.readyState === WebSocket.OPEN) {
+            window.socket.send(JSON.stringify({ type: 'terrain_change', terrain: currentTerrainMap }));
+        }
         window.terrainGraphics.destroy();
         button.style.backgroundColor = '#090808';
         button.style.color = '#6CB472';    
@@ -601,6 +613,9 @@ document.addEventListener('DOMContentLoaded', (event) => {
                 window.terrainGraphics.destroy();
             }
             window.terrainGraphics = TERRAIN.createTerrainVisualization(scene, selectedTerrain);
+            if (window.socket && window.socket.readyState === WebSocket.OPEN) {
+                window.socket.send(JSON.stringify({ type: 'terrain_change', terrain: selectedTerrain }));
+            }
         });
 
         scene.isDragging = false;
