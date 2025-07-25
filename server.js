@@ -62,6 +62,16 @@ wss.on('connection', (ws) => {
                     });
                 }
                 break;
+            case 'end_session':
+                const endSessionClients = sessions[ws.sessionCode];
+                if (endSessionClients) {
+                    endSessionClients.forEach(client => {
+                        if (client.readyState === 1) { // 1 = OPEN
+                            client.send(JSON.stringify({ type: 'end_session' }));
+                        }
+                    });
+                }
+                break;
         }
     });
 
