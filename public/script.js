@@ -50,6 +50,16 @@ window.socket.addEventListener('message', (event) => {
             window.terrainGraphics = TERRAIN.createTerrainVisualization(window.scene, msg.terrain);
             window.terrainGraphics.setDepth(1);
         }
+    } else if (msg.type === 'end_session') {
+        endSession = !endSession;
+        var button = document.getElementById('endSession');
+        if (endSession) {
+            button.style.backgroundColor = 'white';
+            button.style.color = 'black';
+        } else {
+            button.style.backgroundColor = '#090808';
+            button.style.color = '#6CB472';
+        }
     }
 });
 document.getElementById('share').addEventListener('click', () => {
@@ -604,6 +614,9 @@ document.addEventListener('DOMContentLoaded', (event) => {
         });
         document.getElementById('endSession').addEventListener('click', function () {
             endSession = !endSession;
+            if (window.socket && window.socket.readyState === WebSocket.OPEN) {
+                window.socket.send(JSON.stringify({ type: 'end_session' }));
+            }
             var button = document.getElementById('endSession');
             if (!endSession) {
                 button.style.backgroundColor = '#090808';
