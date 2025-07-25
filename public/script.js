@@ -100,6 +100,9 @@ function toggleTerrain() {
     if (terrainButtonClicked) {
         var terrainMap = dropdown.value || "easy";
         currentTerrainMap = terrainMap;
+        if (window.terrainGraphics) {
+            window.terrainGraphics.destroy();
+        }
         if (window.socket && window.socket.readyState === WebSocket.OPEN) {
             window.socket.send(JSON.stringify({ type: 'terrain_change', terrain: terrainMap }));
         }
