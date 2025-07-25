@@ -43,9 +43,12 @@ window.socket.addEventListener('message', (event) => {
     } else if (msg.type === 'peer_joined') {
         window.broadcastAircraftState(); // Send state to new client
     } else if (msg.type === 'terrain_change') {
-        window.terrainGraphics.destroy();
+        if (window.terrainGraphics) {
+            window.terrainGraphics.destroy();
+        }
         if (msg.terrain != "none") {
             window.terrainGraphics = TERRAIN.createTerrainVisualization(window.scene, msg.terrain);
+            window.terrainGraphics.setDepth(1);
         }
     }
 });
@@ -105,10 +108,12 @@ function toggleTerrain() {
         button.style.color = 'black';
     } else {
         currentTerrainMap = "none";
+        if (window.terrainGraphics) {
+            window.terrainGraphics.destroy();
+        }
         if (window.socket && window.socket.readyState === WebSocket.OPEN) {
             window.socket.send(JSON.stringify({ type: 'terrain_change', terrain: currentTerrainMap }));
         }
-        window.terrainGraphics.destroy();
         button.style.backgroundColor = '#090808';
         button.style.color = '#6CB472';    
     }
