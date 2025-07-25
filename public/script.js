@@ -964,7 +964,7 @@ document.addEventListener('DOMContentLoaded', (event) => {
                 aircraft.destroy();
                 aircrafts = aircrafts.filter(a => a !== aircraft);
                 console.log(endSession);
-                if (!endSession) {
+                if (host && !endSession) {
                     let newAircraft = this.physics.add.sprite(centerX, runwayMap[runway], 'aircraft');
                     let scale = this.cameras.main.height * AIRCRAFT_BASE_SCALE / this.cameras.main.zoom;
                     Utils.createNewAircraft(this, newAircraft, scale, centerX, centerY, false, host);
