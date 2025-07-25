@@ -67,7 +67,7 @@ wss.on('connection', (ws) => {
                 if (endSessionClients) {
                     endSessionClients.forEach(client => {
                         if (client.readyState === 1) { // 1 = OPEN
-                            client.send(JSON.stringify({ type: 'end_session' }));
+                            client.send(JSON.stringify({ type: 'end_session', value: msg.value }));
                         }
                     });
                 }
