@@ -90,7 +90,7 @@
             const code = prompt("Enter session code:");
             if (code && selectedMode) {
                 const sessionCode = code.trim().toUpperCase();
-                window.location.href = `single.html?session=${sessionCode}`;
+                window.location.href = `${selectedMode}.html?session=${sessionCode}`;
             }
         });
 
