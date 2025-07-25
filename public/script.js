@@ -43,9 +43,8 @@ window.socket.addEventListener('message', (event) => {
     } else if (msg.type === 'peer_joined') {
         window.broadcastAircraftState(); // Send state to new client
     } else if (msg.type === 'terrain_change') {
-        if (msg.terrain == "none") {
-            window.terrainGraphics.destroy();
-        } else {
+        window.terrainGraphics.destroy();
+        if (msg.terrain != "none") {
             window.terrainGraphics = TERRAIN.createTerrainVisualization(window.scene, msg.terrain);
         }
     }
